@@ -38,6 +38,10 @@ struct boundingBox{
 	int width,height;
 };
 
+struct sub_patch{
+    int x,y,w,h;
+};
+
 class HPatch{
 public:
     
@@ -51,11 +55,13 @@ public:
     int getPy();
     void setPatchCenter(vector<threeDPostCal> dImage);
     patchCenter getPatchCenter(vector<threeDPostCal> dImage);
-    float integralImage(vector<threeDPostCal> dImage);
+    void chooseSubPatches();
+    float subPatchDistance(vector<threeDPostCal> dImage);
     float findEuclideanDistance(ground_Truth gt);
     
 private:
     
     int p_width, p_height, p_x, p_y;
+    vector<sub_patch> f;
     patchCenter pC;
 };

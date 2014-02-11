@@ -18,13 +18,21 @@
 
 int g_max_z = 1300;
 
-int n_patch = 20;
+int n_patch = 40;
 //Ultility functions
 
 //load depth image
 int16_t* loadDepthImageCompressed( const char* fname );
 
+//load calfile
 vector<float> loadCalFile(string fname);
+
+//load trainingset
+vector<int16_t*> loadTrainingSet(string depth_path);
+
+//load groundtruthset
+vector<ground_Truth> loadGroundSet(string depth_path);
+
 //int to string
 string convertInt(int number);
 
@@ -48,29 +56,12 @@ int main(int argc, const char * argv[])
     vector<float> calM;
     calM = loadCalFile(cal_filename);
     
-    vector<int16_t*> trainingSet;
-    vector<ground_Truth> groundTruthSet;
-    int16_t* img = new int16_t[640*480];
-    ground_Truth tempGt;
-    string subS = "";
-    string depthFname = depth_path;
-    string poseFname = depth_path;
-    for(int i = 3; i < 500; i++){
-		if(i<10)
-			subS = "00"+convertInt(i);
-		else if (i>=10 && i < 100)
-			subS = "0"+convertInt(i);
-		else
-			subS = convertInt(i);
-		depthFname = depth_path  + "frame_00"+subS+"_depth.bin";
-		poseFname = depth_path  + "frame_00"+subS+"_pose.txt";
-		img = loadDepthImageCompressed( depthFname.c_str());
-		loadPoseTxt(poseFname,tempGt);
-		trainingSet.push_back(img);
-		groundTruthSet.push_back(tempGt);
-	}
+    vector<int16_t*> trainingSet = loadTrainingSet(depth_path);
+    vector<ground_Truth> groundTruthSet = loadGroundSet(depth_path);
+
     boundingBox bbox = getBoundingBox(trainingSet[0]);
     //cout << "bbox " << bbox.x << ", " << bbox.y << endl;
+    
     vector<threeDPostCal> depthTo3D;
     depthTo3D = get3dFromDepth(trainingSet[0],calM);
     /*for(int y = 0; y < 480; y++){
@@ -79,20 +70,21 @@ int main(int argc, const char * argv[])
 				cout << depthTo3D[y*640+x].x << " , " << depthTo3D[y*640+x].y << " , " << depthTo3D[y*640+x].d << endl;
 		}
 	}*/
-    float f1 = 0;
-    float f2 = 0;
+    float lambda = 0;
     vector<HPatch> rP = getRandomPatches(bbox, n_patch, depthTo3D);
     for(int i = 0; i < n_patch; i++){
+        
 		/*cout << " patch number " << i << " at position x, y, " << rP[i].getPx() << ", " << rP[i].getPy() << endl;
 		cout << " patch center " << rP[i].getPatchCenter(depthTo3D).c << ", " << rP[i].getPatchCenter(depthTo3D).r << endl;
 		cout << " 3d offset vector " << rP[i].getPatchCenter(depthTo3D).p.x << ", " << rP[i].getPatchCenter(depthTo3D).p.y << ", " << rP[i].getPatchCenter(depthTo3D).p.d << endl;*/
-        if(rP[i].getPatchCenter(depthTo3D).p.d > 0 ){
-            f1 = rP[i].integralImage(depthTo3D);
-            f2 = rP[i].integralImage(depthTo3D);
-            if ( f1 - f2 != 0)
-				cout << "binary test threshold candidate for patch " << i << " is : " << abs(f1 - f2) << endl;
-            cout << "EuclideanDistance between the center of the patch and the nose tip " << rP[i].findEuclideanDistance(groundTruthSet[0]) << endl;
-        }
+        
+        
+            rP[i].chooseSubPatches();
+            lambda = rP[i].subPatchDistance(depthTo3D);
+            if ( lambda != 0)
+				cout << "binary test threshold candidate for patch " << i << " is : " << lambda << endl;
+            //cout << "EuclideanDistance between the center of the patch and the nose tip " << rP[i].findEuclideanDistance(groundTruthSet[0]) << endl;
+        
     }
     return 0;
 }
@@ -170,6 +162,53 @@ vector<float> loadCalFile(string fname){
     
     return v;
 }
+
+
+//load trainingset
+vector<int16_t*> loadTrainingSet(string depth_path){
+    
+    vector<int16_t*> trainingSet;
+    int16_t* img = new int16_t[640*480];
+    string subS = "";
+    string depthFname = depth_path;
+    for(int i = 3; i < 500; i++){
+		if(i<10)
+			subS = "00"+convertInt(i);
+		else if (i>=10 && i < 100)
+			subS = "0"+convertInt(i);
+		else
+			subS = convertInt(i);
+		depthFname = depth_path  + "frame_00"+subS+"_depth.bin";
+		
+		img = loadDepthImageCompressed( depthFname.c_str());
+		
+		trainingSet.push_back(img);
+		
+	}
+    return trainingSet;
+}
+
+//load groundtruthset
+vector<ground_Truth> loadGroundSet(string depth_path){
+    
+    vector<ground_Truth> groundTruthSet;
+    ground_Truth tempGt;
+    string subS = "";
+    string poseFname = depth_path;
+    for(int i = 3; i < 500; i++){
+		if(i<10)
+			subS = "00"+convertInt(i);
+		else if (i>=10 && i < 100)
+			subS = "0"+convertInt(i);
+		else
+			subS = convertInt(i);
+        poseFname = depth_path  + "frame_00"+subS+"_pose.txt";
+        loadPoseTxt(poseFname,tempGt);
+        groundTruthSet.push_back(tempGt);
+    }
+    return groundTruthSet;
+}
+
 
 string convertInt(int number)
 {

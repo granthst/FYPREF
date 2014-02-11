@@ -36,37 +36,30 @@ patchCenter HPatch::getPatchCenter(vector<threeDPostCal> dImage){
     return this->pC;
 }
 
-float HPatch::integralImage(vector<threeDPostCal> dImage){
-    int x,y,w,h;
-    //ofstream fOut;
-    //fOut.open("subpatch.txt");
-    float integral = 0;
-    x = this->p_x + rand() % 80;
-    y = this->p_y + rand() % 80;
-    w = 1 + rand() % (80 - x + this->p_x);
-    h = 1 + rand() % (80 - y + this->p_y);
-    //cout << "rP.x : " << rP.x << endl;
-    //cout << "rP.y : " << rP.y << endl;
-    //cout << "x : " << x << endl;
-    //cout << "y : " << y << endl;
-    //cout << "w : " << w << endl;
-    //cout << "h : " << h << endl;
-    //cout << y + h << endl;
-    //cout << x + w << endl;
-    //cout << dImage.size() << endl;
-    for(int j = y; j < y + h; j++){
-        for(int i = x; i < x + w; i++){
-            integral = integral + dImage[j*640+i].d;
-            //cout << i << ", " << j << endl;
-            //fOut << dImage[j*640+i].d <<  " " ;
-        }
-        //fOut << endl;
+void HPatch::chooseSubPatches(){
+    sub_patch temp;
+    for(int i = 0; i < 2; i++){
+        temp.x = this->p_x + rand() % 80;
+        temp.y = this->p_y + rand() % 80;
+        temp.w = 1 + rand() % (80 - temp.x + this->p_x);
+        temp.h = 1 + rand() % (80 - temp.y + this->p_y);
+        f.push_back(temp);
     }
+}
+
+float HPatch::subPatchDistance(vector<threeDPostCal> dImage){
     
-    integral = integral / (w*h);
-    //cout << integral << endl;
-    //fOut.close();
-    return integral;
+    float integral[2] = {};
+    for(int n = 0; n < 2; n++) {
+        for(int j = f[n].y; j < f[n].y + f[n].h; j++){
+            for(int i = f[n].x; i < f[n].x + f[n].w; i++){
+                integral[n] = integral[n] + dImage[j*640+i].d;
+            }
+            
+        }
+        integral[n] = integral[n] / (f[n].w*f[n].h);
+    }
+    return integral[0]-integral[1];
 }
 
 float HPatch::findEuclideanDistance(ground_Truth gt){
