@@ -47,6 +47,14 @@ public:
     Node *left_child, *right_child;
     bool read(ifstream& fInp);
     void write(ofstream& fInp);
+    void setPatchSetBeforeSplit(const vector<HPatch>& PS);
+    void findBestT();
+    void splitPatchSet(int bin_test);
+    
+    
+    int best_T;
+    PatchSet beforeSplit;
+    vector<PatchSet> afterSplit;
     
 };
 
@@ -64,12 +72,18 @@ public:
     
     bool write_tree(const string& fname);
     
-    float infoGain(vector<HPatch>, const vector<float>& randomThreshold);
+    float infoGain(vector<HPatch> patchSet, const vector<float>& randomThreshold);
     
-    vector<int> generateRandomThreshold();
+    void generateRandomThreshold(int n);
     
     void growTree();
     
+    
+    
+    
     int max_depth;
-
+    
+    vector<float> mean;
+    
+    vector<int> rT;
 };
