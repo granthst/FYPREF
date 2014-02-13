@@ -19,6 +19,9 @@
 
 #define PATCH_SET_SIZE 40
 #define DATA_SET_SIZE 10
+#define n 6
+bool swaped=false;
+
 int g_max_z = 1300;
 
 int n_patch = 40;
@@ -55,7 +58,7 @@ vector<threeDPostCal> get3dFromDepth(int16_t* depthImage, vector<float> depth_in
 boundingBox getBoundingBox(int16_t* depthImage);
 
 //generate sample patches
-vector<HPatch> getRandomPatches(boundingBox bbox, int n , vector<threeDPostCal> dImage);
+vector<HPatch> getRandomPatches(boundingBox bbox, int n1 , vector<threeDPostCal> dImage);
 
 //compute the meanVector
 vector<float> computeMeanVector(const vector<vector<float>>& groundTruthSet);
@@ -65,7 +68,7 @@ vector<vector<float>> computeCovariance(const vector<vector<float>>& groundTruth
 
 int main(int argc, const char * argv[])
 {
-    int start_s=clock();
+    //int start_s=clock();
     string depth_path = "/Users/Knowhow10/Desktop/01/";
 	//string gt_path = "D:/kinect_head_pose_db/01/";
     string bin_path = "/Users/Knowhow10/Desktop/db_annotations/01/";
@@ -99,14 +102,23 @@ int main(int argc, const char * argv[])
         pSList.push_back(pS);
         for (int j = 0; j < PATCH_SET_SIZE; j++){
             wholeDataSet.push_back(pS.pSet[j]);
-            /*cout << " Patch " << j << " of image number : " << i << endl;
-            cout << " f1 : " << wholeDataSet[j].rectangles[0].x << " , " << wholeDataSet[j].rectangles[0].y << endl;
-            cout << " f2 : " << wholeDataSet[j].rectangles[1].x << " , " << wholeDataSet[j].rectangles[1].y << endl;*/
         }
     }
-    float lambda = 0;
+
     Node root;
     root.setPatchSetBeforeSplit(wholeDataSet);
+    //root.computeCovariance();
+    /*for(int i = 0; i < 6; i++){
+        for(int j = 0; j < 6; j++){
+            cout << root.cv[i][j] << ", ";
+        }
+        cout << endl;
+    }*/
+
+    //root.computeDeterminant();
+    //cout << root.detConvariance << endl;
+    root.generateRandomThreshold(wholeDataSet);
+    root.findBestT(wholeDataSet);
    /* for( int i = 0; i < DATA_SET_SIZE; i++ ){
         cout << "Ground T.: " << pSList[i].groundT[0] << " " << pSList[i].groundT[1] << " " << pSList[i].groundT[2] << " " << pSList[i].groundT[3] << " " << pSList[i].groundT[4] << " " << pSList[i].groundT[5] <<endl;
     }*/
@@ -137,7 +149,7 @@ int main(int argc, const char * argv[])
    // gt = loadPoseBin("/Users/Knowhow10/Desktop/db_annotations/01/frame_00004_pose.bin");
        // cout << "Ground T.: " << gt[0] << " " << gt[1] << " " << gt[2] << " " << gt[3] << " " << gt[4] << " " << gt[5] <<endl;
     //cout << pS.size << endl;
-    for(int i = 0; i < n_patch; i++){
+    //for(int i = 0; i < n_patch; i++){
         
 		/*cout << " patch number " << i << " at position x, y, " << rP[i].getPx() << ", " << rP[i].getPy() << endl;
 		cout << " patch center " << rP[i].getPatchCenter(depthTo3D).c << ", " << rP[i].getPatchCenter(depthTo3D).r << endl;
@@ -145,14 +157,14 @@ int main(int argc, const char * argv[])
         
         
             //rP[i].chooseSubPatches();
-            lambda = pSList[0].pSet[i].getSubPatchDistance();
+            //lambda = pSList[0].pSet[i].getSubPatchDistance();
             /*if ( lambda != 0)
 				cout << "binary test threshold candidate for patch " << i << " is : " << lambda << endl;*/
             //cout << "EuclideanDistance between the center of the patch and the nose tip " << rP[i].findEuclideanDistance(groundTruthSet[0]) << endl;
         
-    }
+   // }
     cout << endl;
-    vector<float> mean = computeMeanVector(groundTruthSetBin);
+    /*vector<float> mean = computeMeanVector(groundTruthSetBin);
     vector<vector<float>> covarianceM = computeCovariance(groundTruthSetBin);
     for(int i = 0; i < 6; i++)
         cout << mean[i] << ", ";
@@ -162,9 +174,9 @@ int main(int argc, const char * argv[])
             cout << covarianceM[i][j] << ", ";
         }
         cout << endl;
-    }
+    }*/
         
-    int stop_s=clock();
+    //int stop_s=clock();
     //cout << "execution time : " << (stop_s-start_s)/double(CLOCKS_PER_SEC)*1000000 << endl;
     return 0;
 }
@@ -380,7 +392,7 @@ vector<threeDPostCal> get3dFromDepth(int16_t* depthImage, vector<float> depth_in
 	return depthTo3D;
 }
 
-vector<HPatch> getRandomPatches(boundingBox bbox, int n , vector<threeDPostCal> dImage){
+vector<HPatch> getRandomPatches(boundingBox bbox, int n1 , vector<threeDPostCal> dImage){
 	
 	vector<HPatch> rP;
     HPatch temp(80,80);

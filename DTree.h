@@ -10,7 +10,9 @@
 #define __fypFirstDraft__DTree__
 
 #include <iostream>
+#include <limits>
 #include "HPatch.h"
+#include "TMatrix.h"
 #endif /* defined(__fypFirstDraft__DTree__) */
 
 using namespace std;
@@ -48,14 +50,21 @@ public:
     bool read(ifstream& fInp);
     void write(ofstream& fInp);
     void setPatchSetBeforeSplit(const vector<HPatch>& PS);
-    void findBestT();
+    void findBestT(const vector<HPatch>& PS);
     void splitPatchSet(int bin_test);
-    
-    
+    vector<float> computeMeanVector(vector<HPatch> sPvector);
+    vector<vector<float>> computeCovariance(vector<HPatch> sPvector);
+    float computeDeterminant(vector<vector<float>> cvM);
+    float computeEntropy(vector<vector<float>> cvM);
+    void generateRandomThreshold(const vector<HPatch>& PS);
+    float infoGain(vector<HPatch> total, vector<HPatch> l, vector<HPatch> r, const vector<int>& randomThreshold);
+
     int best_T;
-    PatchSet beforeSplit;
-    vector<PatchSet> afterSplit;
-    
+    vector<HPatch> beforeSplit;
+    vector<HPatch> leftSplit;
+    vector<HPatch> rightSplit;
+    float detConvariance;
+    vector<int> rT;
 };
 
 
@@ -72,9 +81,9 @@ public:
     
     bool write_tree(const string& fname);
     
-    float infoGain(vector<HPatch> patchSet, const vector<float>& randomThreshold);
     
-    void generateRandomThreshold(int n);
+    
+    
     
     void growTree();
     
@@ -85,5 +94,5 @@ public:
     
     vector<float> mean;
     
-    vector<int> rT;
+    
 };

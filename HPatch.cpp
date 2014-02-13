@@ -9,7 +9,7 @@
 #include "HPatch.h"
 
 void HPatch::setPatchXY(boundingBox bbox){
-    cout<< "bbox x,y : " << bbox.x << ", " << bbox.y << endl;
+    //cout<< "bbox x,y : " << bbox.x << ", " << bbox.y << endl;
     p_x = bbox.x + rand() % bbox.width - 80;
     p_y = bbox.y + rand() % bbox.height - 80 ;
 }
