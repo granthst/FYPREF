@@ -13,6 +13,8 @@
 #include <limits>
 #include "HPatch.h"
 #include "TMatrix.h"
+#include <cmath>
+#include <fstream>
 #endif /* defined(__fypFirstDraft__DTree__) */
 
 using namespace std;
@@ -38,61 +40,85 @@ class Node{
 public:
     
     Node(){
-        test_set = false;
-        leaf_set = false;
-        left_child = 0;
-        right_child = 0;
+        //left_child = 0;
+        //right_child = 0;
         depth = 0;
+        isleaf = 0;
     }
-    bool test_set, leaf_set;
-    int depth;
-    Node *left_child, *right_child;
+    Node(vector<sub_patch> f11, vector<sub_patch> f22, vector<float> subD1, vector<int> rt1, int d){
+        f1 = f11;
+        f2 = f22;
+        subD = subD1;
+        rt = rt1;
+        //cout << d << endl;
+        depth = d + 1;
+        isleaf = 0;
+        //cout << depth << endl;
+    }
     bool read(ifstream& fInp);
     void write(ofstream& fInp);
-    void setPatchSetBeforeSplit(const vector<HPatch>& PS);
-    void findBestT(const vector<HPatch>& PS);
+    void generateRandomSubPatches();
+    void generateRandomThreshold(const vector<HPatch>& PS);
+    void setPatchSetBeforeSplit(vector<HPatch> PS);
+    void findBestT(vector<HPatch> PS,vector<threeDPostCal> dImage);
     void splitPatchSet(int bin_test);
     vector<float> computeMeanVector(vector<HPatch> sPvector);
-    vector<vector<float>> computeCovariance(vector<HPatch> sPvector);
+    vector<vector<float>> computeCovariance(vector<HPatch> sPvector, bool angleOrNose);
     float computeDeterminant(vector<vector<float>> cvM);
     float computeEntropy(vector<vector<float>> cvM);
-    void generateRandomThreshold(const vector<HPatch>& PS);
-    float infoGain(vector<HPatch> total, vector<HPatch> l, vector<HPatch> r, const vector<int>& randomThreshold);
-
+    float infoGain(vector<HPatch> total, vector<HPatch> l, vector<HPatch> r);
+    float traceCovariance(vector<vector<float>>  cv);
+    
+    
+    bool isleaf;
+    int depth;
+    Node *left_child, *right_child;
     int best_T;
     vector<HPatch> beforeSplit;
     vector<HPatch> leftSplit;
     vector<HPatch> rightSplit;
-    float detConvariance;
+    vector<int> lIndex,rIndex;
+    vector<vector<sub_patch>> rectangles;
+    vector<sub_patch> bestF;
     vector<int> rT;
+    float detConvariance;
+    
+    vector<sub_patch> f2;
+    vector<sub_patch> f1;
+    vector<float> subD;
+    vector<int> rt;
+    vector<float> meanVector;
+    vector<Node> makeTreeNoRecursion(vector<HPatch> PS,vector<threeDPostCal> dImage);
+    float trace;
 };
 
 
 class DTree{
 
 public:
-    DTree(){m_root = 0;};
-    DTree(int d){m_root = 0; max_depth = d;};
-    ~DTree() { delete m_root;};
+    DTree(){};
+    DTree(int d){max_depth = d;};
+    ~DTree() { };
     
-    Node *m_root;
+    Node m_root;
     
-    bool read_tree(const string& fname);
+    void read_tree(const string& fname);
     
-    bool write_tree(const string& fname);
+    void write_tree(const string& fname);
     
+    void loadPreProcessedData(const string& fname);
     
+    void growTree(vector<HPatch> PS, vector<threeDPostCal> dImage);
     
+    void regressionEstimation(vector<threeDPostCal> test3D,boundingBox testBbox,vector<float> testGt);
     
-    
-    void growTree();
-    
-    
-    
-    
+    vector<sub_patch> f2;
+    vector<sub_patch> f1;
+    vector<float> subD;
+    vector<int> rt;
     int max_depth;
     
     vector<float> mean;
-    
-    
+    vector<Node> treeTable;
+    int noNodes;
 };

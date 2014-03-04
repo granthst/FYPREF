@@ -20,6 +20,10 @@
 #define PATCH_SET_SIZE 40
 #define DATA_SET_SIZE 10
 #define n 6
+#define THESHOLD_MAX 1000
+
+string preProcessedDataFile = "integral3.txt";
+string treefile = "tree.txt";
 bool swaped=false;
 
 int g_max_z = 1300;
@@ -60,17 +64,23 @@ boundingBox getBoundingBox(int16_t* depthImage);
 //generate sample patches
 vector<HPatch> getRandomPatches(boundingBox bbox, int n1 , vector<threeDPostCal> dImage);
 
+void generateRandomSubPatches(vector<vector<sub_patch>>& rectangles);
+
+void generateRandomThreshold(vector<int>& rT);
+
+void writePreProcessedData(vector<HPatch> PS, vector<vector<threeDPostCal>> dImage, vector<vector<sub_patch>>& rectangles, vector<int>& rT, string fname);
 //compute the meanVector
 vector<float> computeMeanVector(const vector<vector<float>>& groundTruthSet);
 
 //compute the cv
 vector<vector<float>> computeCovariance(const vector<vector<float>>& groundTruthSet);
 
+void loadPatches(string fname, vector<vector<HPatch>> ppp);
+
 int main(int argc, const char * argv[])
 {
-    //int start_s=clock();
+
     string depth_path = "/Users/Knowhow10/Desktop/01/";
-	//string gt_path = "D:/kinect_head_pose_db/01/";
     string bin_path = "/Users/Knowhow10/Desktop/db_annotations/01/";
 	string cal_filename = depth_path + "depth.cal";
     vector<float> calM;
@@ -80,104 +90,67 @@ int main(int argc, const char * argv[])
     vector<ground_Truth> groundTruthSet = loadGroundSet(depth_path);
     vector<vector<float>> groundTruthSetBin = loadGroundSetBin(bin_path);
     boundingBox bbox;
-    //cout << "bbox " << bbox.x << ", " << bbox.y << endl;
     
-
-    /*for(int y = 0; y < 480; y++){
-        for(int x = 0; x < 640; x++){
-            if(depthTo3D[y*640+x].d != 0)
-				cout << depthTo3D[y*640+x].x << " , " << depthTo3D[y*640+x].y << " , " << depthTo3D[y*640+x].d << endl;
-		}
-	}*/
-    //vector<vector<threeDPostCal>> depthTo3DList;
     cout << trainingSet.size() << endl;
     vector<threeDPostCal> depthTo3D;
     vector<PatchSet> pSList;
     vector<HPatch> wholeDataSet;
-    for( int i = 0; i < DATA_SET_SIZE; i++ ){
+    vector<vector<threeDPostCal>> depthTo3DSet;
+    
+    for( int i = 30; i < 40; i++ ){
+        cout << "#####     i = " << i << endl;
         PatchSet pS(PATCH_SET_SIZE);
         bbox = getBoundingBox(trainingSet[i]);
         depthTo3D = get3dFromDepth(trainingSet[i],calM);
+        depthTo3DSet.push_back(depthTo3D);
         pS.getRandomPatches(bbox, depthTo3D, groundTruthSetBin[i]);
+        cout << pS.pSet[0].p_x << endl;
+        cout << " gt : " << groundTruthSetBin[i][0] << " " << groundTruthSetBin[i][1] << " " << groundTruthSetBin[i][2] << " " << groundTruthSetBin[i][3] << " " << groundTruthSetBin[i][4] << " " << groundTruthSetBin[i][5] << endl;
         pSList.push_back(pS);
-        for (int j = 0; j < PATCH_SET_SIZE; j++){
+        for (int j = 0; j <  PATCH_SET_SIZE; j++){
+            pS.pSet[j].index = i*PATCH_SET_SIZE+j;
             wholeDataSet.push_back(pS.pSet[j]);
         }
     }
+    cout << "depthTo3D size : " << depthTo3D.size() << endl;
+    cout << "depthTo3Dset size : " << depthTo3DSet.size() << endl;
+    
+    vector<vector<sub_patch>> rectangles;
+    vector<int> rT;
+    //writePreProcessedData(wholeDataSet,depthTo3DSet,rectangles,rT,preProcessedDataFile);
+    
+    /***string outputTreefile = "tree.txt";
+    
+    string fname = "integral1.txt";
+    DTree tree2(10);
+    tree2.loadPreProcessedData(fname);
+    cout << tree2.m_root.rt.size() << endl;
+    cout << tree2.m_root.f1.size() << endl;
+    cout << tree2.m_root.f2.size() << endl;
+    cout << tree2.m_root.subD.size() << endl;
 
-    Node root;
-    root.setPatchSetBeforeSplit(wholeDataSet);
-    //root.computeCovariance();
-    /*for(int i = 0; i < 6; i++){
-        for(int j = 0; j < 6; j++){
-            cout << root.cv[i][j] << ", ";
-        }
-        cout << endl;
-    }*/
-
-    //root.computeDeterminant();
-    //cout << root.detConvariance << endl;
-    root.generateRandomThreshold(wholeDataSet);
-    root.findBestT(wholeDataSet);
-   /* for( int i = 0; i < DATA_SET_SIZE; i++ ){
-        cout << "Ground T.: " << pSList[i].groundT[0] << " " << pSList[i].groundT[1] << " " << pSList[i].groundT[2] << " " << pSList[i].groundT[3] << " " << pSList[i].groundT[4] << " " << pSList[i].groundT[5] <<endl;
-    }*/
+    tree2.growTree(wholeDataSet, depthTo3D);
+    tree2.write_tree(outputTreefile);***/
+   
     
-    //vector<HPatch> rP = getRandomPatches(bbox, n_patch, depthTo3D);
-    /*DTree dTree;
-    dTree.generateRandomThreshold(80);
-    for(int j = 0; j < 80; j++){
-        cout << "pool of randomly generated test threshold " << dTree.rT[j] << endl;
-    }*/
     
-    //cout << groundTruthSetBin[0][0] << endl;
-   /*for (int j = 0; j < groundTruthSetBin.size(); j++)
-        cout << "Ground T.: " << groundTruthSetBin[j][0] << " " << groundTruthSetBin[j][1] << " " << groundTruthSetBin[j][2] << " " << groundTruthSetBin[j][3] << " " << groundTruthSetBin[j][4] << " " << groundTruthSetBin[j][5] <<endl;*/
+    DTree testTree;
+    testTree.read_tree(treefile);
+    //cout << testTree.noNodes << endl;
+    cout << testTree.treeTable[5].bestF[0].x << endl;
     
-    //bool have_gt = false;
-	//vector<float>gt;
-	//try to read in the ground truth from a binary file
-	//string pose_filename1 = "/Users/Knowhow10/Desktop/db_annotations/01/frame_00004_pose.bin";
-	/*FILE* pFile = fopen(pose_filename1.c_str(), "rb");
-	if(pFile){
-        
-		have_gt = true;
-		have_gt &= ( fread( &gt[0], sizeof(float),6, pFile) == 6 );
-		fclose(pFile);
-	}
-    cout << "Ground T.: " << gt[0] << " " << gt[1] << " " << gt[2] << " " << gt[3] << " " << gt[4] << " " << gt[5] <<endl;*/
-   // gt = loadPoseBin("/Users/Knowhow10/Desktop/db_annotations/01/frame_00004_pose.bin");
-       // cout << "Ground T.: " << gt[0] << " " << gt[1] << " " << gt[2] << " " << gt[3] << " " << gt[4] << " " << gt[5] <<endl;
-    //cout << pS.size << endl;
-    //for(int i = 0; i < n_patch; i++){
-        
-		/*cout << " patch number " << i << " at position x, y, " << rP[i].getPx() << ", " << rP[i].getPy() << endl;
-		cout << " patch center " << rP[i].getPatchCenter(depthTo3D).c << ", " << rP[i].getPatchCenter(depthTo3D).r << endl;
-		cout << " 3d offset vector " << rP[i].getPatchCenter(depthTo3D).p.x << ", " << rP[i].getPatchCenter(depthTo3D).p.y << ", " << rP[i].getPatchCenter(depthTo3D).p.d << endl;*/
-        
-        
-            //rP[i].chooseSubPatches();
-            //lambda = pSList[0].pSet[i].getSubPatchDistance();
-            /*if ( lambda != 0)
-				cout << "binary test threshold candidate for patch " << i << " is : " << lambda << endl;*/
-            //cout << "EuclideanDistance between the center of the patch and the nose tip " << rP[i].findEuclideanDistance(groundTruthSet[0]) << endl;
-        
-   // }
-    cout << endl;
-    /*vector<float> mean = computeMeanVector(groundTruthSetBin);
-    vector<vector<float>> covarianceM = computeCovariance(groundTruthSetBin);
-    for(int i = 0; i < 6; i++)
-        cout << mean[i] << ", ";
-    cout << endl << endl;
-    for(int i = 0; i < 6; i++){
-        for(int j = 0; j < 6; j++){
-            cout << covarianceM[i][j] << ", ";
-        }
-        cout << endl;
-    }*/
-        
-    //int stop_s=clock();
-    //cout << "execution time : " << (stop_s-start_s)/double(CLOCKS_PER_SEC)*1000000 << endl;
+    string testImagefile = "/Users/Knowhow10/Desktop/01/frame_00024_depth.bin";
+    string testImageGTfile = "/Users/Knowhow10/Desktop/db_annotations/01/frame_00024_depth.bin";
+    int16_t* testImage = loadDepthImageCompressed(testImagefile.c_str());
+    boundingBox testBbox = getBoundingBox(testImage);
+    vector<threeDPostCal> test3D = get3dFromDepth(testImage,calM);
+    vector<float> testGt = loadPoseBin(testImageGTfile);
+    testTree.regressionEstimation(test3D, testBbox, testGt);
+    //PatchSet testPS(PATCH_SET_SIZE);
+    //testPS.getRandomPatches(testBbox, test3D, testGt);
+    //testPS.pSet[0].rectangles = testTree.treeTable[0].bestF;
+    //cout << testPS.pSet[0].rectangles[0].x << endl;
+    
     return 0;
 }
 
@@ -357,7 +330,7 @@ vector<float> loadPoseBin(string fname){
 	}
     for (int i = 0; i < 6; i ++)
         gt1.push_back(gt[i]);
-    //cout << gt[3] << " " << gt[4] << " " << gt[5] << endl;
+   // cout << gt[0] << " " << gt[1] << " " << gt[2] << endl;
     return gt1;
 }
 
@@ -436,6 +409,60 @@ boundingBox getBoundingBox(int16_t* depthImage){
     
 }
 
+void generateRandomSubPatches(vector<vector<sub_patch>>& rectangles){
+    sub_patch temp;
+    vector<sub_patch> tempSub;
+    for (int j = 0; j < PATCH_SET_SIZE * DATA_SET_SIZE; j++){
+        for(int i = 0; i < 2; i++){
+            temp.x = rand() % 80;
+            temp.y = rand() % 80;
+            temp.w = 1 + rand() % (80 - temp.x);
+            temp.h = 1 + rand() % (80 - temp.y);
+            tempSub.push_back(temp);
+            //cout << tempSub[i].x << endl;
+        }
+        rectangles.push_back(tempSub);
+        //cout << " rec " << rectangles[j][0].x << endl;
+        tempSub.clear();
+        //cout << " rec " << rectangles[j][0].x << endl;
+    }
+}
+
+void generateRandomThreshold(vector<int>& rT){
+    
+    
+    int rt = 0;
+    for (int i = 0; i < PATCH_SET_SIZE * DATA_SET_SIZE; i++){
+        rt = -THESHOLD_MAX + rand() % (2*THESHOLD_MAX);
+        rT.push_back(rt);
+    }
+    
+}
+
+void writePreProcessedData(vector<HPatch> PS, vector<vector<threeDPostCal>> dImage, vector<vector<sub_patch>>& rectangles, vector<int>& rT, string fname){
+    generateRandomSubPatches(rectangles);
+    generateRandomThreshold(rT);
+    ofstream fOut;
+    fOut.open(fname);
+    for(int j = 0; j < rT.size(); j++){
+        int k = 0;
+        for( int i = 0; i < PS.size(); i++){
+            
+            PS[i].chooseSubPatches(rectangles[j]);
+            //cout << " f1 " << i << "x " << PS[i].rectangles[0].x << endl;
+            fOut << rectangles[j][0].x << " " << rectangles[j][0].y << " " << rectangles[j][0].w << " " << rectangles[j][0].h << endl;
+            fOut << rectangles[j][1].x << " " << rectangles[j][1].y << " " << rectangles[j][1].w << " " << rectangles[j][1].h << endl;
+            PS[i].setSubPatchDistance(dImage[k]);
+            if((i+1)%40 == 0)
+                k++;
+            fOut << PS[i].subPDistance << " " << rT[j] << endl;
+        }
+        cout << " rt " << j << " done" << endl;
+    }
+    fOut.close();
+    
+}
+
 
 vector<float> computeMeanVector(const vector<vector<float>>& groundTruthSet){
     vector<float> mean;
@@ -466,4 +493,13 @@ vector<vector<float>> computeCovariance(const vector<vector<float>>& groundTruth
         Covariance.push_back(col);
     }
     return Covariance;
+}
+
+void loadPatches(string fname, vector<vector<HPatch>> ppp){
+    //vector<vector<HPatch>> ppp;
+    ifstream fInp;
+    fInp.open(fname);
+    
+    
+    
 }

@@ -13,6 +13,7 @@
 #include <vector>
 #include <stdint.h>
 #include <math.h>
+#include <fstream>
 using namespace std;
 
 
@@ -42,6 +43,8 @@ struct sub_patch{
     int x,y,w,h;
 };
 
+
+
 class HPatch{
 public:
     
@@ -55,7 +58,8 @@ public:
     int getPy();
     void setPatchCenter(vector<threeDPostCal> dImage);
     patchCenter getPatchCenter(vector<threeDPostCal> dImage);
-    void chooseSubPatches();
+    void chooseSubPatches(vector<sub_patch> SP);
+    void loadSubPatches(const string fname);
     void setSubPatchDistance(vector<threeDPostCal> dImage);
     float getSubPatchDistance();
     float findEuclideanDistance(ground_Truth gt);
@@ -64,7 +68,7 @@ public:
     vector<float> groundT;
     //int groundTruthIndex;
 
-    
+    int index;
     int p_width, p_height, p_x, p_y;
     //vector<sub_patch> f;
     patchCenter pC;

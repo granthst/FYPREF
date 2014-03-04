@@ -11,7 +11,7 @@
 void HPatch::setPatchXY(boundingBox bbox){
     //cout<< "bbox x,y : " << bbox.x << ", " << bbox.y << endl;
     p_x = bbox.x + rand() % bbox.width - 80;
-    p_y = bbox.y + rand() % bbox.height - 80 ;
+    p_y = bbox.y + rand() % bbox.height - 80;
 }
 
 int HPatch::getPx(){
@@ -37,20 +37,40 @@ patchCenter HPatch::getPatchCenter(vector<threeDPostCal> dImage){
     return this->pC;
 }
 
-void HPatch::chooseSubPatches(){
-    sub_patch temp;
-    for(int i = 0; i < 2; i++){
-        temp.x = this->p_x + rand() % 80;
-        temp.y = this->p_y + rand() % 80;
-        temp.w = 1 + rand() % (80 - temp.x + this->p_x);
-        temp.h = 1 + rand() % (80 - temp.y + this->p_y);
-        rectangles.push_back(temp);
+void HPatch::chooseSubPatches(vector<sub_patch> SP){
         /*cout << "xt : "<< temp.x << " yt : "<< temp.y << endl;
         cout << "f1 x, y : " << rectangles[i].x << " , " << rectangles[i].y << endl;
         cout << "f size : " << rectangles.size()<< endl;
         cout << endl;*/
+    sub_patch temp;
+    //cout << SP[0].x << endl;
+    for(int i = 0; i < 2; i++){
+        temp.x = SP[i].x + this->p_x;
+        temp.y = SP[i].y + this->p_y;
+        temp.w = SP[i].w ;
+        temp.h = SP[i].h ;
+        rectangles.push_back(temp);
+       // cout << "sub patch x " << rectangles[i].x << endl;
     }
-    //cout << "xt : "<< temp.x << " yt : "<< temp.y << endl;
+    //cout << "xt : "<< temp.w << " yt : "<< temp.h << endl;
+}
+
+
+void HPatch::loadSubPatches(const string fname){
+    sub_patch temp;
+    int dummy;
+    ifstream fInp;
+    fInp.open(fname);
+    for(int i = 0; i < 2; i++){
+        fInp >> temp.x;
+        fInp >> temp.y;
+        fInp >> temp.w;
+        fInp >> temp.h;
+        rectangles.push_back(temp);
+        // cout << "sub patch x " << rectangles[i].x << endl;
+    }
+    fInp >> subPDistance;
+    fInp >> dummy;
 }
 
 void HPatch::setSubPatchDistance(vector<threeDPostCal> dImage){
@@ -58,6 +78,7 @@ void HPatch::setSubPatchDistance(vector<threeDPostCal> dImage){
     //cout << f[1].x << ", " << f[1].y << endl;
     float integral[2] = {};
     for(int n = 0; n < 2; n++) {
+        //cout <<  rectangles[n].x << endl;
         for(int j = rectangles[n].y; j < rectangles[n].y + rectangles[n].h; j++){
             for(int i = rectangles[n].x; i < rectangles[n].x + rectangles[n].w; i++){
                 integral[n] = integral[n] + dImage[j*640+i].d;
@@ -92,9 +113,9 @@ void PatchSet::getRandomPatches(boundingBox bbox, vector<threeDPostCal> dImage, 
         temp.setPatchXY(bbox);
         //cout << "xp : "<< temp.getPx() << " yp : "<< temp.getPy() << endl;
 		temp.setPatchCenter(dImage);
-        temp.chooseSubPatches();
+        //temp.chooseSubPatches();
         //cout << "f1 x, y : " << temp.f[1].x << " , " << temp.f[1].y << endl;
-        temp.setSubPatchDistance(dImage);
+       // temp.setSubPatchDistance(dImage);
         temp.loadGroundTruth(groundT);
 		pSet.push_back(temp);
         this->storeGroundTruth(groundT);

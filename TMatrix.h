@@ -10,7 +10,7 @@
 #define __fypFirstDraft__Matrix__
 
 #include <iostream>
-#define n 6
+#define n 3
 #endif /* defined(__fypFirstDraft__Matrix__) */
 class TMatrix{
     
@@ -22,6 +22,6 @@ public:
     int searchRow(int row,int col);
     void UpperTMatrix();
     float determinant();
-    float m[36];
+    float m[9];
     bool swaped = false;
 };
