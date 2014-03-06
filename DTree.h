@@ -45,11 +45,7 @@ public:
         depth = 0;
         isleaf = 0;
     }
-    Node(vector<sub_patch> f11, vector<sub_patch> f22, vector<float> subD1, vector<int> rt1, int d){
-        f1 = f11;
-        f2 = f22;
-        subD = subD1;
-        rt = rt1;
+    Node(int d){
         //cout << d << endl;
         depth = d + 1;
         isleaf = 0;
@@ -57,10 +53,10 @@ public:
     }
     bool read(ifstream& fInp);
     void write(ofstream& fInp);
-    void generateRandomSubPatches();
+    void generateRandomSubPatches(const vector<HPatch>& PS);
     void generateRandomThreshold(const vector<HPatch>& PS);
     void setPatchSetBeforeSplit(vector<HPatch> PS);
-    void findBestT(vector<HPatch> PS,vector<threeDPostCal> dImage);
+    void findBestT(vector<HPatch> PS,vector<Mat> integralImage);
     void splitPatchSet(int bin_test);
     vector<float> computeMeanVector(vector<HPatch> sPvector);
     vector<vector<float>> computeCovariance(vector<HPatch> sPvector, bool angleOrNose);
@@ -82,13 +78,8 @@ public:
     vector<sub_patch> bestF;
     vector<int> rT;
     float detConvariance;
-    
-    vector<sub_patch> f2;
-    vector<sub_patch> f1;
-    vector<float> subD;
-    vector<int> rt;
     vector<float> meanVector;
-    vector<Node> makeTreeNoRecursion(vector<HPatch> PS,vector<threeDPostCal> dImage);
+    vector<Node> makeTreeNoRecursion(vector<HPatch> PS,vector<Mat> dImage);
     float trace;
 };
 
@@ -106,9 +97,9 @@ public:
     
     void write_tree(const string& fname);
     
-    void loadPreProcessedData(const string& fname);
+    void loadPreProcessedData(const string& fname,vector<HPatch>& PS);
     
-    void growTree(vector<HPatch> PS, vector<threeDPostCal> dImage);
+    void growTree(vector<HPatch> PS, vector<Mat> dImage);
     
     void regressionEstimation(vector<threeDPostCal> test3D,boundingBox testBbox,vector<float> testGt);
     
@@ -120,5 +111,6 @@ public:
     
     vector<float> mean;
     vector<Node> treeTable;
+    vector<int> nodesAtEachLevel;
     int noNodes;
 };

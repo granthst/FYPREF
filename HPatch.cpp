@@ -22,15 +22,15 @@ int HPatch::getPy(){
     return p_y;
 }
 
-void HPatch::setPatchCenter(vector<threeDPostCal> dImage){
+void HPatch::setPatchCenter(Mat dImage){
     int centerP = (this->p_y+40 ) * 640 + (this->p_x+40);
 	//cout << dImage.size() << endl;
 	//cout << centerP <<endl;
 	pC.c = this->p_x+40;
 	pC.r = this->p_y+40;
-	pC.p.x = dImage[centerP].x;
-	pC.p.y = dImage[centerP].y;
-	pC.p.d = dImage[centerP].d;
+	pC.p.x = dImage.at<Vec3f>(pC.r,pC.c)[0];
+	pC.p.y = dImage.at<Vec3f>(pC.r,pC.c)[1];
+	pC.p.d = dImage.at<Vec3f>(pC.r,pC.c)[2];
 }
 
 patchCenter HPatch::getPatchCenter(vector<threeDPostCal> dImage){
@@ -73,21 +73,30 @@ void HPatch::loadSubPatches(const string fname){
     fInp >> dummy;
 }
 
+void HPatch::printRectangles() {
+    int noRectangles = (int) rectangles.size();
+    cout << "noRectangles = " << noRectangles << endl;
+    for (int i = 0; noRectangles; i++) {
+        cout << "rectangle: " << i << " [x, y, w, h] = [" << rectangles[i].x << ", " << rectangles[i].y << ", " << rectangles[i].w << ", " << rectangles[i].h << "]" << endl;
+    }
+}
+
 void HPatch::setSubPatchDistance(vector<threeDPostCal> dImage){
-    
     //cout << f[1].x << ", " << f[1].y << endl;
     float integral[2] = {};
     for(int n = 0; n < 2; n++) {
         //cout <<  rectangles[n].x << endl;
         for(int j = rectangles[n].y; j < rectangles[n].y + rectangles[n].h; j++){
             for(int i = rectangles[n].x; i < rectangles[n].x + rectangles[n].w; i++){
-                integral[n] = integral[n] + dImage[j*640+i].d;
+                integral[n] = integral[n] + dImage[(j*640)+i].d;
             }
             
         }
-        integral[n] = integral[n] / (rectangles[n].w*rectangles[n].h);
+        integral[n] = integral[n] / (rectangles[n].w * rectangles[n].h);
     }
+    //printRectangles();
     subPDistance = integral[0]-integral[1];
+    rectangles.clear();
     //cout << subPDistance << endl;
 }
 
@@ -105,9 +114,11 @@ void HPatch::loadGroundTruth(vector<float> gt){
         this->groundT.push_back(gt[i]);
     }
     
+    
+    
 }
 
-void PatchSet::getRandomPatches(boundingBox bbox, vector<threeDPostCal> dImage, vector<float> groundT){
+void PatchSet::getRandomPatches(boundingBox bbox, Mat dImage, vector<float> groundT){
 	for (int i = 0; i < size; i++){
 		HPatch temp(80,80);
         temp.setPatchXY(bbox);
@@ -117,6 +128,10 @@ void PatchSet::getRandomPatches(boundingBox bbox, vector<threeDPostCal> dImage, 
         //cout << "f1 x, y : " << temp.f[1].x << " , " << temp.f[1].y << endl;
        // temp.setSubPatchDistance(dImage);
         temp.loadGroundTruth(groundT);
+        //cout << temp.pC.c*640+temp.pC.r << endl;
+        temp.groundT[0] = temp.groundT[0] - temp.pC.p.x;
+        temp.groundT[1] = temp.groundT[1] - temp.pC.p.y;
+        temp.groundT[2] = temp.groundT[2] - temp.pC.p.d;
 		pSet.push_back(temp);
         this->storeGroundTruth(groundT);
         //cout << temp.getSubPatchDistance() << endl;

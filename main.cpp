@@ -18,11 +18,11 @@
 #include "DTree.h"
 
 #define PATCH_SET_SIZE 40
-#define DATA_SET_SIZE 10
+#define DATA_SET_SIZE 20
 #define n 6
 #define THESHOLD_MAX 1000
-
-string preProcessedDataFile = "integral3.txt";
+using namespace cv;
+string preProcessedDataFile = "randomPatches.txt";
 string treefile = "tree.txt";
 bool swaped=false;
 
@@ -68,79 +68,98 @@ void generateRandomSubPatches(vector<vector<sub_patch>>& rectangles);
 
 void generateRandomThreshold(vector<int>& rT);
 
-void writePreProcessedData(vector<HPatch> PS, vector<vector<threeDPostCal>> dImage, vector<vector<sub_patch>>& rectangles, vector<int>& rT, string fname);
+void writePreProcessedData(vector<HPatch> PS, vector<vector<sub_patch>>& rectangles, vector<int>& rT, string fname);
 //compute the meanVector
 vector<float> computeMeanVector(const vector<vector<float>>& groundTruthSet);
 
 //compute the cv
 vector<vector<float>> computeCovariance(const vector<vector<float>>& groundTruthSet);
 
-void loadPatches(string fname, vector<vector<HPatch>> ppp);
+
+void getIntegralImageDepthChannel(Mat& depthI,int16_t* trainingSet,Mat* channels,vector<float> calM,Mat& img3D);
+
 
 int main(int argc, const char * argv[])
 {
-
+    //srand(time(NULL));
+    
     string depth_path = "/Users/Knowhow10/Desktop/01/";
     string bin_path = "/Users/Knowhow10/Desktop/db_annotations/01/";
 	string cal_filename = depth_path + "depth.cal";
     vector<float> calM;
     calM = loadCalFile(cal_filename);
-    
+    vector<threeDPostCal> depthTo3D,integralImage;
     vector<int16_t*> trainingSet = loadTrainingSet(depth_path);
     vector<ground_Truth> groundTruthSet = loadGroundSet(depth_path);
     vector<vector<float>> groundTruthSetBin = loadGroundSetBin(bin_path);
     boundingBox bbox;
+    depthTo3D = get3dFromDepth(trainingSet[0],calM);
+    vector<Mat> depthIntegral;
+    //vector<vector<Mat>> channelsList;
+    vector<Mat> img3DList;
+    for(int i = 0; i < trainingSet.size(); i++){
+        
+        Mat* channels = new Mat[3];
+        Mat depthI = Mat(480, 640, CV_32FC3);
+        Mat sumI = Mat(481, 641, CV_64FC3);
+        Mat img3D;
+        getIntegralImageDepthChannel(depthI,trainingSet[i],channels,calM,img3D);
+        
+        integral(channels[2],sumI);
+        depthIntegral.push_back(sumI);
+        img3DList.push_back(img3D);
+        cout << "image " << i << " done" << endl;
+    }
+
+   /*for(int row = 0; row < 480; row++){
+        for(int col = 0; col < 640; col++){
+            //depthI.at<int16_t>(row, col) = depthTo3D[640*row + col].d;
+            cout << img3DList[0].at<Vec3f>(row,col) << endl;
+            //cout << depthIntegral[5].at<double>(row,col) << endl;
+        }
+    }*/
+    
     
     cout << trainingSet.size() << endl;
-    vector<threeDPostCal> depthTo3D;
-    vector<PatchSet> pSList;
+    
+    //vector<PatchSet> pSList;
     vector<HPatch> wholeDataSet;
     vector<vector<threeDPostCal>> depthTo3DSet;
-    
-    for( int i = 30; i < 40; i++ ){
+    for( int i = 0; i < DATA_SET_SIZE; i++ ){
         cout << "#####     i = " << i << endl;
         PatchSet pS(PATCH_SET_SIZE);
         bbox = getBoundingBox(trainingSet[i]);
-        depthTo3D = get3dFromDepth(trainingSet[i],calM);
-        depthTo3DSet.push_back(depthTo3D);
-        pS.getRandomPatches(bbox, depthTo3D, groundTruthSetBin[i]);
-        cout << pS.pSet[0].p_x << endl;
+        //depthTo3D = get3dFromDepth(trainingSet[i],calM);
+        //depthTo3DSet.push_back(depthTo3D);
+        pS.getRandomPatches(bbox, img3DList[i], groundTruthSetBin[i]);
         cout << " gt : " << groundTruthSetBin[i][0] << " " << groundTruthSetBin[i][1] << " " << groundTruthSetBin[i][2] << " " << groundTruthSetBin[i][3] << " " << groundTruthSetBin[i][4] << " " << groundTruthSetBin[i][5] << endl;
-        pSList.push_back(pS);
+        cout << " meanVector : " << pS.pSet[0].groundT[0] << " " << pS.pSet[0].groundT[1] << " " << pS.pSet[0].groundT[2] << " " << pS.pSet[0].groundT[3] << " " << pS.pSet[0].groundT[4] << " " << pS.pSet[0].groundT[5] << endl;
+        //pSList.push_back(pS);
         for (int j = 0; j <  PATCH_SET_SIZE; j++){
-            pS.pSet[j].index = i*PATCH_SET_SIZE+j;
+            pS.pSet[j].index = i;
             wholeDataSet.push_back(pS.pSet[j]);
         }
     }
-    cout << "depthTo3D size : " << depthTo3D.size() << endl;
-    cout << "depthTo3Dset size : " << depthTo3DSet.size() << endl;
+    //cout << "depthTo3D size : " << depthTo3D.size() << endl;
+    //cout << "depthTo3Dset size : " << depthTo3DSet.size() << endl;
     
-    vector<vector<sub_patch>> rectangles;
-    vector<int> rT;
-    //writePreProcessedData(wholeDataSet,depthTo3DSet,rectangles,rT,preProcessedDataFile);
-    
-    /***string outputTreefile = "tree.txt";
-    
-    string fname = "integral1.txt";
-    DTree tree2(10);
-    tree2.loadPreProcessedData(fname);
-    cout << tree2.m_root.rt.size() << endl;
-    cout << tree2.m_root.f1.size() << endl;
-    cout << tree2.m_root.f2.size() << endl;
-    cout << tree2.m_root.subD.size() << endl;
 
-    tree2.growTree(wholeDataSet, depthTo3D);
-    tree2.write_tree(outputTreefile);***/
-   
+    
+    string outputTreefile = "tree.txt";
+    DTree tree2(10);
+
+    tree2.growTree(wholeDataSet, depthIntegral);
+    tree2.write_tree(outputTreefile);
     
     
+    /***
     DTree testTree;
     testTree.read_tree(treefile);
     //cout << testTree.noNodes << endl;
     cout << testTree.treeTable[5].bestF[0].x << endl;
     
-    string testImagefile = "/Users/Knowhow10/Desktop/01/frame_00024_depth.bin";
-    string testImageGTfile = "/Users/Knowhow10/Desktop/db_annotations/01/frame_00024_depth.bin";
+    string testImagefile = "/Users/Knowhow10/Desktop/01/frame_00025_depth.bin";
+    string testImageGTfile = "/Users/Knowhow10/Desktop/db_annotations/01/frame_00025_depth.bin";
     int16_t* testImage = loadDepthImageCompressed(testImagefile.c_str());
     boundingBox testBbox = getBoundingBox(testImage);
     vector<threeDPostCal> test3D = get3dFromDepth(testImage,calM);
@@ -150,6 +169,7 @@ int main(int argc, const char * argv[])
     //testPS.getRandomPatches(testBbox, test3D, testGt);
     //testPS.pSet[0].rectangles = testTree.treeTable[0].bestF;
     //cout << testPS.pSet[0].rectangles[0].x << endl;
+    ***/
     
     return 0;
 }
@@ -365,7 +385,7 @@ vector<threeDPostCal> get3dFromDepth(int16_t* depthImage, vector<float> depth_in
 	return depthTo3D;
 }
 
-vector<HPatch> getRandomPatches(boundingBox bbox, int n1 , vector<threeDPostCal> dImage){
+/*vector<HPatch> getRandomPatches(boundingBox bbox, int n1 , vector<threeDPostCal> dImage){
 	
 	vector<HPatch> rP;
     HPatch temp(80,80);
@@ -376,7 +396,7 @@ vector<HPatch> getRandomPatches(boundingBox bbox, int n1 , vector<threeDPostCal>
 		rP.push_back(temp);
 	}
 	return rP;
-}
+}*/
 
 boundingBox getBoundingBox(int16_t* depthImage){
     
@@ -431,33 +451,30 @@ void generateRandomSubPatches(vector<vector<sub_patch>>& rectangles){
 void generateRandomThreshold(vector<int>& rT){
     
     
-    int rt = 0;
+    float rt = 0;
     for (int i = 0; i < PATCH_SET_SIZE * DATA_SET_SIZE; i++){
-        rt = -THESHOLD_MAX + rand() % (2*THESHOLD_MAX);
-        rT.push_back(rt);
+        rt = -THESHOLD_MAX + (rand() %(2*THESHOLD_MAX));
+        rT.push_back((int) rt);
     }
     
 }
 
-void writePreProcessedData(vector<HPatch> PS, vector<vector<threeDPostCal>> dImage, vector<vector<sub_patch>>& rectangles, vector<int>& rT, string fname){
+void writePreProcessedData(vector<HPatch> PS, vector<vector<sub_patch>>& rectangles, vector<int>& rT, string fname){
     generateRandomSubPatches(rectangles);
     generateRandomThreshold(rT);
     ofstream fOut;
     fOut.open(fname);
     for(int j = 0; j < rT.size(); j++){
-        int k = 0;
         for( int i = 0; i < PS.size(); i++){
             
             PS[i].chooseSubPatches(rectangles[j]);
             //cout << " f1 " << i << "x " << PS[i].rectangles[0].x << endl;
+            fOut << PS[i].p_x << " " << PS[i].p_y << endl;
             fOut << rectangles[j][0].x << " " << rectangles[j][0].y << " " << rectangles[j][0].w << " " << rectangles[j][0].h << endl;
             fOut << rectangles[j][1].x << " " << rectangles[j][1].y << " " << rectangles[j][1].w << " " << rectangles[j][1].h << endl;
-            PS[i].setSubPatchDistance(dImage[k]);
-            if((i+1)%40 == 0)
-                k++;
-            fOut << PS[i].subPDistance << " " << rT[j] << endl;
+            fOut  << rT[j] << endl;
         }
-        cout << " rt " << j << " done" << endl;
+        cout << " rt " << j << " " << rT[j]<< " done" << endl;
     }
     fOut.close();
     
@@ -495,11 +512,50 @@ vector<vector<float>> computeCovariance(const vector<vector<float>>& groundTruth
     return Covariance;
 }
 
-void loadPatches(string fname, vector<vector<HPatch>> ppp){
-    //vector<vector<HPatch>> ppp;
-    ifstream fInp;
-    fInp.open(fname);
+
+
+void getIntegralImageDepthChannel(Mat& depthI,int16_t* trainingSet,Mat* channels,vector<float> calM,Mat& img3D){
+    
+    
+    depthI = Mat(480, 640, CV_32FC3);
+    img3D.create( depthI.rows, depthI.cols, CV_32FC3 );
+    for(int row = 0; row < 480; row++){
+        for(int col = 0; col < 640; col++){
+            depthI.at<int16_t>(row, col) = trainingSet[640*row + col];
+            //cout << depthI.at<int16_t>(row,col) << endl;
+            
+        }
+    }
     
     
     
+    for(int y = 0; y < img3D.rows; y++)
+	{
+		Vec3f* img3Di = img3D.ptr<Vec3f>(y);
+        //cout << *img3Di << endl;
+        //cout << *img3D.ptr<Vec3f>(y) << endl;
+		const int16_t* depthImgi = depthI.ptr<int16_t>(y);
+        //cout << *depthImgi << endl;
+		for(int x = 0; x < img3D.cols; x++){
+            
+			float d = (float)depthImgi[x];
+            //cout << depthImgi[x] << endl;
+			if ( d < g_max_z && d > 0 ){
+                
+				img3Di[x][0] = d * (float(x) - calM[2])/calM[0];
+				img3Di[x][1] = d * (float(y) - calM[5])/calM[4];
+				img3Di[x][2] = d;
+                
+			}
+			else{
+                
+				img3Di[x] = 0;
+			}
+            //cout << x << endl;
+            //cout << img3Di[x] << " after cal " << endl;
+		}
+	}
+    
+    
+	split(img3D, channels);
 }

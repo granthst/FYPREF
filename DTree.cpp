@@ -7,10 +7,10 @@
 //
 
 #include "DTree.h"
-#define n_P 800
+#define n_P 400
 #define THESHOLD_MAX 1000
-#define DEPTH_TREE 5
-string integralImageFilename = "integral1.txt";
+#define DEPTH_TREE 16
+string integralImageFilename = "integral3.txt";
 string treeFilename = "tree.txt";
 //read tree file
 bool Node::read(ifstream& fInp){
@@ -25,7 +25,7 @@ void Node::write(ofstream& fInp){
     
 }
 
-void Node::generateRandomSubPatches(){
+void Node::generateRandomSubPatches(const vector<HPatch>& PS){
     sub_patch temp;
     vector<sub_patch> tempSub;
     for (int j = 0; j < n_P; j++){
@@ -49,7 +49,7 @@ void Node::generateRandomSubPatches(){
 void Node::generateRandomThreshold(const vector<HPatch>& PS){
     
     int rt = 0;
-    for (int i = 0; i < PS.size(); i++){
+    for (int i = 0; i < n_P; i++){
         rt = -THESHOLD_MAX + rand() % (2*THESHOLD_MAX);
         rT.push_back(rt);
     }
@@ -61,7 +61,7 @@ void Node::setPatchSetBeforeSplit( vector<HPatch> PS){
     beforeSplit = PS;
 }
 
-void Node::findBestT(vector<HPatch> PS, vector<threeDPostCal> dImage){
+void Node::findBestT(vector<HPatch> PS, vector<Mat> itegralImage){
     
     //cout << PS.size() << endl;
     float infoGainTemp = numeric_limits<int>::min();
@@ -71,6 +71,8 @@ void Node::findBestT(vector<HPatch> PS, vector<threeDPostCal> dImage){
     float tempSB = 0;
     float tempRT = 0;
     sub_patch tempS1,tempS2;
+    generateRandomThreshold(PS);
+    generateRandomSubPatches(PS);
     //sub_patch temp;
     //ifstream fInp;
     //ofstream fOut;
@@ -81,36 +83,39 @@ void Node::findBestT(vector<HPatch> PS, vector<threeDPostCal> dImage){
         PS[i].chooseSubPatches(rectangles[i]);
         PS[i].setSubPatchDistance(dImage);
     }*/
-
-        for(int j = 0; j < n_P; j++){
+    
+        for(int j = 0; j < rectangles.size(); j++){
+            tempRT = rT[j];
             //cout << "threshold : " << rT[j] << endl;
             
             for( int i = 0; i < PS.size(); i++){
                 //cout << " f1 x " << rectangles[j][0].x << endl << endl;
                 //int rf = rand() % 399;
                 //int rt = rand() % 399;
-                //PS[i].chooseSubPatches(rectangles[j]);
-                //cout << " f1 " << i << "x " << PS[i].rectangles[0].x << endl;
-                //fOut << rectangles[j][0].x << " " << rectangles[j][0].y << " " << rectangles[j][0].w << " " << rectangles[j][0].h << endl;
-                //fOut << rectangles[j][1].x << " " << rectangles[j][1].y << " " << rectangles[j][1].w << " " << rectangles[j][1].h << endl;
-                //PS[i].setSubPatchDistance(dImage);
-                //fOut << PS[i].subPDistance << " " << rT[j] << endl;
-                /*if (i <= 1) {
-                    cout << "patch no: " << i;
-                    cout << ", integral image " << PS[i].subPDistance;
-                    cout << ", threshold " << rT[j] << endl;
-                }*/
+                PS[i].chooseSubPatches(rectangles[j]);
+                x1 = rectangles[j][0].x; x2 = rectangles[j][1].x;
+                y1 = rectangles[j][0].y; y2 = rectangles[j][1].y;
+                w1 = rectangles[j][0].w; w2 = rectangles[j][1].w;
+                h1 = rectangles[j][0].h; h2 = rectangles[j][1].h;
                 
-                //fInp >> x1 >> y1 >> w1 >> h1 >> x2 >> y2 >> w2 >> h2;
-                //fInp >> tempSB >> tempRT;
-                //cout << j*n_P+i << endl;
-                //cout << " index " << j*n_P+PS[i].index << endl;
-                
-                x1 = f1[j*n_P+PS[i].index].x ; y1 = f1[j*n_P+PS[i].index].y ; w1 = f1[j*n_P+PS[i].index].w; h1 = f1[j*n_P+PS[i].index].h;
+                /*if(w1 == 0)
+                    w1 = 1;
+                if(h1 == 0)
+                    h1 = 1;
+                if(h2 == 0)
+                    h2 = 1;
+                if(w2 == 0)
+                    w2 = 1;*/
+                /*x1 = f1[j*n_P+PS[i].index].x ; y1 = f1[j*n_P+PS[i].index].y ; w1 = f1[j*n_P+PS[i].index].w; h1 = f1[j*n_P+PS[i].index].h;
                 x2 = f2[j*n_P+PS[i].index].x; y2 = f2[j*n_P+PS[i].index].y; w2 = f2[j*n_P+PS[i].index].w; h2 = f2[j*n_P+PS[i].index].h;
-                tempSB = subD[j*n_P+PS[i].index];
-                tempRT = rt[j];
-
+                tempSB = subD[j*n_P+PS[i].index];*/
+                double sum1 = (itegralImage[PS[i].index].at<double>(x1+PS[i].p_x+w1,y1+PS[i].p_y+h1) + itegralImage[PS[i].index].at<double>(x1+PS[i].p_x,y1+PS[i].p_y) - itegralImage[PS[i].index].at<double>(x1+PS[i].p_x+w1,y1+PS[i].p_y) - itegralImage[PS[i].index].at<double>(x1+PS[i].p_x,y1+PS[i].p_y+h1))/(double)(w1*h1);
+                
+                double sum2 = (itegralImage[PS[i].index].at<double>(x2+PS[i].p_x+w2,y2+PS[i].p_y+h2) + itegralImage[PS[i].index].at<double>(x2+PS[i].p_x,y2+PS[i].p_y) - itegralImage[PS[i].index].at<double>(x2+PS[i].p_x+w2,y2+PS[i].p_y) - itegralImage[PS[i].index].at<double>(x2+PS[i].p_x,y2+PS[i].p_y+h2))/(double)(w2*h2);
+                //cout << PS[i].index << endl;
+                tempSB = sum1 - sum2;
+                //cout << "tempSB : " << tempSB << endl;
+                //cout << "tempRT : " << tempRT << endl;
                 if(tempSB > tempRT)
                     tempLeft.push_back(PS[i]);
                 else
@@ -136,8 +141,6 @@ void Node::findBestT(vector<HPatch> PS, vector<threeDPostCal> dImage){
                     tempS2.x = x2;   tempS2.y = y2;
                     tempS2.w = w2;   tempS2.h = h2;
                     best_T = tempRT;
-                    //cout << " j : " << j << " infogain " << infoGain(beforeSplit, tempLeft, tempRight);
-                     //cout << " j " << j  <<" " << tempS1.x << " " << tempS1.y << " " << tempS1.w << " " << tempS1.h << " " << tempS2.x << " " << tempS2.y << " " << tempS2.w << " " << tempS2.h << " " << best_T << endl;
                 }
             
             
@@ -158,79 +161,41 @@ void Node::findBestT(vector<HPatch> PS, vector<threeDPostCal> dImage){
 
    bestF.push_back(tempS1);  bestF.push_back(tempS2);
     
-    /*for(int i = 0; i < 2; i++){
-        if(leftSplit.size()!= 0)
-            fOut << bestF[i].x << " " << bestF[i].y << " " << bestF[i].w << " " << bestF[i].h << " " ;
-    }
-    fOut << best_T;
-    fOut << endl;
-    
-    //fInp.close();
-    
-    fOut.close();*/
-    
-    //cout << " best threshold " << best_T << endl;
-    //left_child->setPatchSetBeforeSplit(leftSplit);
-    //left_child->rt = rt;
-    //left_child->f1 = f1;
-    //left_child->f2 = f2;
-    //left_child->subD = subD;
 
-    /*for(int i = 0; i < leftSplit.size(); i++)
-        cout << leftSplit[i].index << endl;*/
-        //fOut.close();
     //cout << "at depth " << depth << " beforesplit patch size " << beforeSplit.size() << endl;
     //cout << "at depth " << depth << " left child patch size : " << leftSplit.size() << " right child patch size : " << rightSplit.size() << endl;
-//    if( depth < 2){
-//        if(leftSplit.size() > 3){
-//            left_child = new Node(f1,f2,subD,rt,depth);
-//            //cout << " lf child depth " << left_child.depth << endl;
-//            left_child->setPatchSetBeforeSplit(leftSplit);
-//            //cout << left_child.beforeSplit.size() << endl;
-//            left_child->findBestT(left_child->beforeSplit, dImage);
-//        }
-//        if(rightSplit.size() > 3){
-//            right_child = new Node(f1,f2,subD,rt,depth);
-//            //cout << " right_child child depth " << right_child.depth << endl;
-//            right_child->setPatchSetBeforeSplit(rightSplit);
-//            //cout << right_child.beforeSplit.size() << endl;
-//            right_child->findBestT(right_child->beforeSplit, dImage);
-//        }
-        
-//    }
-//    else
-//        return;
+
 
 }
 
-vector<Node> Node::makeTreeNoRecursion(vector<HPatch> PS, vector<threeDPostCal> dImage) {
+vector<Node> Node::makeTreeNoRecursion(vector<HPatch> PS, vector<Mat> integralImage) {
     
     int iterationNo = 0;
     vector<Node> pointers;
     Node initialPointer = *this;
     initialPointer.setPatchSetBeforeSplit(PS);
-    initialPointer.findBestT(PS,dImage);
+    initialPointer.findBestT(PS,integralImage);
     pointers.push_back(initialPointer);
     int prevNoPointers = 0;
     while (iterationNo < DEPTH_TREE) {
         int noPointers = (int) pointers.size();
         
-        //cout << "iterationNo = " << iterationNo << ", noPointers = " << noPointers << endl;
+        cout << "iterationNo = " << iterationNo << ", noPointers = " << noPointers << endl;
         
         for (int j = prevNoPointers; j < noPointers; j++) {
             Node parentPointer = pointers[j];
             if(parentPointer.isleaf == 0){
-                Node leftPointer = Node(f1,f2,subD,rt,iterationNo);
+                Node leftPointer = Node(iterationNo);
                 leftPointer.setPatchSetBeforeSplit(parentPointer.leftSplit);/***/
-                leftPointer.findBestT(leftPointer.beforeSplit, dImage);
+                leftPointer.findBestT(leftPointer.beforeSplit, integralImage);
                 leftPointer.depth = iterationNo+1;
                 pointers.push_back(leftPointer);
                 //pointers[j].left_child = leftPointer;
                 
-                Node rightPointer = Node(f1,f2,subD,rt,iterationNo);
+                Node rightPointer = Node(iterationNo);
                 rightPointer.setPatchSetBeforeSplit(parentPointer.rightSplit);/***/
                 rightPointer.depth = iterationNo+1;
-                rightPointer.findBestT(rightPointer.beforeSplit, dImage);
+                rightPointer.findBestT(rightPointer.beforeSplit, integralImage);
                 pointers.push_back(rightPointer);
                 //pointers[j]->right_child = rightPointer;
             }
@@ -318,7 +283,7 @@ float Node::infoGain(vector<HPatch> parent, vector<HPatch> left, vector<HPatch> 
     vector<vector<float>> l2 = computeCovariance(left,0);
     vector<vector<float>> r2 = computeCovariance(right,0);
     float IG = 0 ;
-    IG = (computeEntropy(p1)+ computeEntropy(p2)) - float(left.size())/parent.size()*(computeEntropy(l1)+computeEntropy(l2)) - float(right.size())/parent.size()*(computeEntropy(r1)+computeEntropy(r2));
+    IG = (computeEntropy(p1) + computeEntropy(p2)) - float(left.size())/parent.size()*(computeEntropy(l1)+computeEntropy(l2)) - float(right.size())/parent.size()*(computeEntropy(r1)+computeEntropy(r2));
     //cout << IG << endl;
     return IG;
 }
@@ -345,10 +310,20 @@ void DTree::read_tree(const string& fname){
     vector<float> tempMean;
     float tempData,tempTrace;
     fInp.open(fname);
-    int t = 0;
+    int nodeCounter = 0;
+    int d = -1;
     while (fInp.eof()!=1){
         Node tempNode;
         fInp >> tempDepth >> tempIsLeaf;
+        if (d == tempDepth) {
+            nodeCounter++;
+            nodesAtEachLevel[d] = nodeCounter;
+        }
+        else {
+            nodeCounter = 1;
+            nodesAtEachLevel.push_back(nodeCounter);
+            d = tempDepth;
+        }
         if(tempIsLeaf == 0){
             for(int i = 0; i < 2; i ++){
                 fInp >> tempSubpatch.x >> tempSubpatch.y >> tempSubpatch.w >> tempSubpatch.h;
@@ -409,14 +384,21 @@ void DTree::write_tree(const string& fname){
 }
 
 
-void DTree::loadPreProcessedData(const string& fname){
+void DTree::loadPreProcessedData(const string& fname, vector<HPatch>& PS ){
     ifstream fInp;
     fInp.open(integralImageFilename);
     float tempSB = 0;
     float tempRT = 0;
     sub_patch temp;
+    int tempPX,tempPY;
     for(int j = 0; j < n_P; j++){
         for( int i = 0; i < n_P; i++){
+            fInp >> tempPX >> tempPY;
+            if(j == 0){
+                PS[i].p_x = tempPY;
+                PS[i].p_x = tempPX;
+            }
+            
             fInp >> temp.x >> temp.y >> temp.w >> temp.h;
             f1.push_back(temp);
             fInp >> temp.x >> temp.x >> temp.w >> temp.h;
@@ -427,31 +409,69 @@ void DTree::loadPreProcessedData(const string& fname){
         }
         rt.push_back(tempRT);
     }
-    m_root.f1 = f1;
-    m_root.f2 = f2;
-    m_root.subD = subD;
-    m_root.rt = rt;
+
 }
 
 //build the tree
-void DTree::growTree(vector<HPatch> PS, vector<threeDPostCal> dImage){
+void DTree::growTree(vector<HPatch> PS, vector<Mat> dImage){
     treeTable = m_root.makeTreeNoRecursion(PS,dImage);
 }
 
 
-void DTree::regressionEstimation(vector<threeDPostCal> test3D,boundingBox testBbox,vector<float> testGt){
+/*void DTree::regressionEstimation(vector<threeDPostCal> test3D,boundingBox testBbox,vector<float> testGt){
     PatchSet testPS(40);
     testPS.getRandomPatches(testBbox, test3D, testGt);
     //cout << treeTable[0].best_T << endl;
+    vector<int> accumlativeNodesAtEachLevel;
+    int accumlativeSum = 0;
+    for(int i = 0;  i < nodesAtEachLevel.size(); i++) {
+        accumlativeNodesAtEachLevel.push_back(accumlativeSum);
+        accumlativeSum += nodesAtEachLevel[i];
+    }
     vector<float> estimatedMean;
     for(int i = 0; i < testPS.pSet.size(); i++){
-        //for(int j = 0; j < treeTable.size(); j++){
-            testPS.pSet[i].chooseSubPatches(treeTable[1].bestF);
-            testPS.pSet[i].setSubPatchDistance(test3D);
-            cout << "patch " << i << endl;
-            //cout << treeTable[1].bestF[0].x << endl;
-            cout << testPS.pSet[i].subPDistance << endl;
-            cout << treeTable[0].best_T << endl;
-        //}
+        int chosenNode = 0;
+        cout << endl << "considering patch " << i << "..." << endl;
+        for(int j = 0; j < nodesAtEachLevel.size(); j++){
+            int noLeafNodes = 0;
+            int noNonLeafNodes = 0;
+            for(int k = 0; k < nodesAtEachLevel[j]; k++){
+                bool outputMeanVector = false;
+                int nodePositionInTreeTable = accumlativeNodesAtEachLevel[j] + k;
+                if (treeTable[nodePositionInTreeTable].isleaf) {
+                    noLeafNodes++;
+                }
+                else {
+                    noNonLeafNodes++;
+                }
+                if (k == chosenNode) {
+                    string direction = "";
+                    if (treeTable[nodePositionInTreeTable].isleaf) {
+                        outputMeanVector = true;
+                        chosenNode = -1;
+                        direction = "STOP";
+                    }
+                    else {
+                        testPS.pSet[i].chooseSubPatches(treeTable[nodePositionInTreeTable].bestF);
+                        testPS.pSet[i].setSubPatchDistance(test3D);
+                        if (testPS.pSet[i].subPDistance > treeTable[nodePositionInTreeTable].best_T) {
+                            chosenNode = 2*(noNonLeafNodes-1);
+                            direction = "LEFT";
+                        }
+                        else {
+                            chosenNode = 2*noNonLeafNodes - 1;
+                            direction = "RIGHT";
+                        }
+                    }
+                    cout << "at level: " << j << ", subPatch Distance = " << testPS.pSet[i].subPDistance << ", threshold = " << treeTable[nodePositionInTreeTable].best_T << ", chosenNode = " << chosenNode << " (" << direction << ")" << endl;
+                    if (outputMeanVector) {
+                        cout << "stopped node position in tree table = " << nodePositionInTreeTable << ", mean vector = ";
+                        for(int a = 0; a < treeTable[nodePositionInTreeTable].meanVector.size(); a++)
+                            cout << treeTable[nodePositionInTreeTable].meanVector[a] << " ";
+                        cout << endl;
+                    }
+                }
+            }
+        }
     }
-}
+}*/

@@ -14,8 +14,11 @@
 #include <stdint.h>
 #include <math.h>
 #include <fstream>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 using namespace std;
-
+using namespace cv;
 
 #endif /* defined(__fypFirstDraft__HPatch__) */
 
@@ -56,7 +59,7 @@ public:
     void setPatchXY(boundingBox bbox);
     int getPx();
     int getPy();
-    void setPatchCenter(vector<threeDPostCal> dImage);
+    void setPatchCenter(Mat dImage);
     patchCenter getPatchCenter(vector<threeDPostCal> dImage);
     void chooseSubPatches(vector<sub_patch> SP);
     void loadSubPatches(const string fname);
@@ -73,6 +76,8 @@ public:
     //vector<sub_patch> f;
     patchCenter pC;
     float subPDistance;
+    
+    void printRectangles();
 };
 
 class PatchSet{
@@ -81,7 +86,7 @@ public:
     PatchSet(){}
     PatchSet(int n){size = n;}
     ~PatchSet(){}
-    void getRandomPatches(boundingBox bbox , vector<threeDPostCal> dImage, vector<float> groundT );
+    void getRandomPatches(boundingBox bbox , Mat dImage, vector<float> groundT );
     void storeGroundTruth(vector<float> groundT);
     vector<HPatch> pSet;
     vector<float> groundT;
