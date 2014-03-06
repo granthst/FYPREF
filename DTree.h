@@ -101,7 +101,7 @@ public:
     
     void growTree(vector<HPatch> PS, vector<Mat> dImage);
     
-    void regressionEstimation(vector<threeDPostCal> test3D,boundingBox testBbox,vector<float> testGt);
+    void regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> testGt,vector<vector<float>>& estimatedMean,Mat img3D);
     
     vector<sub_patch> f2;
     vector<sub_patch> f1;

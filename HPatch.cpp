@@ -37,7 +37,7 @@ patchCenter HPatch::getPatchCenter(vector<threeDPostCal> dImage){
     return this->pC;
 }
 
-void HPatch::chooseSubPatches(vector<sub_patch> SP){
+void HPatch::chooseSubPatches(vector<sub_patch> SP, Mat itegralImage){
         /*cout << "xt : "<< temp.x << " yt : "<< temp.y << endl;
         cout << "f1 x, y : " << rectangles[i].x << " , " << rectangles[i].y << endl;
         cout << "f size : " << rectangles.size()<< endl;
@@ -45,14 +45,20 @@ void HPatch::chooseSubPatches(vector<sub_patch> SP){
     sub_patch temp;
     //cout << SP[0].x << endl;
     for(int i = 0; i < 2; i++){
-        temp.x = SP[i].x + this->p_x;
-        temp.y = SP[i].y + this->p_y;
-        temp.w = SP[i].w ;
-        temp.h = SP[i].h ;
+        temp.y = SP[i].x + this->p_x;
+        temp.x = SP[i].y + this->p_y;
+        temp.h = SP[i].w ;
+        temp.w = SP[i].h ;
         rectangles.push_back(temp);
-       // cout << "sub patch x " << rectangles[i].x << endl;
+        //cout << "sub patch x " << rectangles[i].x << endl;
     }
+    
+    double sum1 = (itegralImage.at<double>(rectangles[0].x+rectangles[0].w,rectangles[0].y+rectangles[0].h) + itegralImage.at<double>(rectangles[0].x,rectangles[0].y) - itegralImage.at<double>(rectangles[0].x+rectangles[0].w,rectangles[0].y) - itegralImage.at<double>(rectangles[0].x,rectangles[0].y+rectangles[0].h))/(double)(rectangles[0].w*rectangles[0].h);
+    //cout << sum1 << endl;
+    double sum2 = (itegralImage.at<double>(rectangles[1].x+rectangles[1].w,rectangles[1].y+rectangles[1].h) + itegralImage.at<double>(rectangles[1].x,rectangles[1].y) - itegralImage.at<double>(rectangles[1].x+rectangles[1].w,rectangles[1].y) - itegralImage.at<double>(rectangles[1].x,rectangles[1].y+rectangles[1].h))/(double)(rectangles[1].w*rectangles[1].h);
     //cout << "xt : "<< temp.w << " yt : "<< temp.h << endl;
+    subPDistance = sum1 - sum2;
+    rectangles.clear();
 }
 
 

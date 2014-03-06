@@ -92,7 +92,7 @@ void Node::findBestT(vector<HPatch> PS, vector<Mat> itegralImage){
                 //cout << " f1 x " << rectangles[j][0].x << endl << endl;
                 //int rf = rand() % 399;
                 //int rt = rand() % 399;
-                PS[i].chooseSubPatches(rectangles[j]);
+                PS[i].chooseSubPatches(rectangles[j],itegralImage[PS[i].index]);
                 x1 = rectangles[j][0].x; x2 = rectangles[j][1].x;
                 y1 = rectangles[j][0].y; y2 = rectangles[j][1].y;
                 w1 = rectangles[j][0].w; w2 = rectangles[j][1].w;
@@ -109,11 +109,9 @@ void Node::findBestT(vector<HPatch> PS, vector<Mat> itegralImage){
                 /*x1 = f1[j*n_P+PS[i].index].x ; y1 = f1[j*n_P+PS[i].index].y ; w1 = f1[j*n_P+PS[i].index].w; h1 = f1[j*n_P+PS[i].index].h;
                 x2 = f2[j*n_P+PS[i].index].x; y2 = f2[j*n_P+PS[i].index].y; w2 = f2[j*n_P+PS[i].index].w; h2 = f2[j*n_P+PS[i].index].h;
                 tempSB = subD[j*n_P+PS[i].index];*/
-                double sum1 = (itegralImage[PS[i].index].at<double>(x1+PS[i].p_x+w1,y1+PS[i].p_y+h1) + itegralImage[PS[i].index].at<double>(x1+PS[i].p_x,y1+PS[i].p_y) - itegralImage[PS[i].index].at<double>(x1+PS[i].p_x+w1,y1+PS[i].p_y) - itegralImage[PS[i].index].at<double>(x1+PS[i].p_x,y1+PS[i].p_y+h1))/(double)(w1*h1);
                 
-                double sum2 = (itegralImage[PS[i].index].at<double>(x2+PS[i].p_x+w2,y2+PS[i].p_y+h2) + itegralImage[PS[i].index].at<double>(x2+PS[i].p_x,y2+PS[i].p_y) - itegralImage[PS[i].index].at<double>(x2+PS[i].p_x+w2,y2+PS[i].p_y) - itegralImage[PS[i].index].at<double>(x2+PS[i].p_x,y2+PS[i].p_y+h2))/(double)(w2*h2);
                 //cout << PS[i].index << endl;
-                tempSB = sum1 - sum2;
+                tempSB = PS[i].subPDistance;
                 //cout << "tempSB : " << tempSB << endl;
                 //cout << "tempRT : " << tempRT << endl;
                 if(tempSB > tempRT)
@@ -418,25 +416,35 @@ void DTree::growTree(vector<HPatch> PS, vector<Mat> dImage){
 }
 
 
-/*void DTree::regressionEstimation(vector<threeDPostCal> test3D,boundingBox testBbox,vector<float> testGt){
+void DTree::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> testGt,vector<vector<float>>& estimatedMean,Mat img3D){
     PatchSet testPS(40);
-    testPS.getRandomPatches(testBbox, test3D, testGt);
+    testPS.getRandomPatches(testBbox, img3D, testGt);
+    cout << testPS.pSet.size() << endl;
     //cout << treeTable[0].best_T << endl;
     vector<int> accumlativeNodesAtEachLevel;
     int accumlativeSum = 0;
     for(int i = 0;  i < nodesAtEachLevel.size(); i++) {
+        
+        
         accumlativeNodesAtEachLevel.push_back(accumlativeSum);
         accumlativeSum += nodesAtEachLevel[i];
+        cout << " nodesAtEachLevel " << nodesAtEachLevel[i] << endl;
+        cout << " accumlativeNodesAtEachLevel " << accumlativeNodesAtEachLevel[i] << endl;
     }
-    vector<float> estimatedMean;
+    
     for(int i = 0; i < testPS.pSet.size(); i++){
         int chosenNode = 0;
+        vector<float> tempMean;
         cout << endl << "considering patch " << i << "..." << endl;
         for(int j = 0; j < nodesAtEachLevel.size(); j++){
+            //cout << " j " << j << endl;
+            //bool chosen = 0;
             int noLeafNodes = 0;
             int noNonLeafNodes = 0;
+            //cout << nodesAtEachLevel[j] << endl;
             for(int k = 0; k < nodesAtEachLevel[j]; k++){
                 bool outputMeanVector = false;
+                //cout << " k " << k << endl;
                 int nodePositionInTreeTable = accumlativeNodesAtEachLevel[j] + k;
                 if (treeTable[nodePositionInTreeTable].isleaf) {
                     noLeafNodes++;
@@ -444,6 +452,8 @@ void DTree::growTree(vector<HPatch> PS, vector<Mat> dImage){
                 else {
                     noNonLeafNodes++;
                 }
+                //cout << " noLeafNodes " << noLeafNodes << endl;
+                //cout << " noNonLeafNodes " << noNonLeafNodes <<  endl;
                 if (k == chosenNode) {
                     string direction = "";
                     if (treeTable[nodePositionInTreeTable].isleaf) {
@@ -452,15 +462,19 @@ void DTree::growTree(vector<HPatch> PS, vector<Mat> dImage){
                         direction = "STOP";
                     }
                     else {
-                        testPS.pSet[i].chooseSubPatches(treeTable[nodePositionInTreeTable].bestF);
-                        testPS.pSet[i].setSubPatchDistance(test3D);
+                        testPS.pSet[i].chooseSubPatches(treeTable[nodePositionInTreeTable].bestF,test3D);
+                        //testPS.pSet[i].setSubPatchDistance(test3D);
                         if (testPS.pSet[i].subPDistance > treeTable[nodePositionInTreeTable].best_T) {
                             chosenNode = 2*(noNonLeafNodes-1);
                             direction = "LEFT";
+                            //chosen = 1;
+                            k = nodesAtEachLevel[j];
                         }
                         else {
                             chosenNode = 2*noNonLeafNodes - 1;
                             direction = "RIGHT";
+                            //chosen = 1;
+                            k = nodesAtEachLevel[j];
                         }
                     }
                     cout << "at level: " << j << ", subPatch Distance = " << testPS.pSet[i].subPDistance << ", threshold = " << treeTable[nodePositionInTreeTable].best_T << ", chosenNode = " << chosenNode << " (" << direction << ")" << endl;
@@ -469,9 +483,15 @@ void DTree::growTree(vector<HPatch> PS, vector<Mat> dImage){
                         for(int a = 0; a < treeTable[nodePositionInTreeTable].meanVector.size(); a++)
                             cout << treeTable[nodePositionInTreeTable].meanVector[a] << " ";
                         cout << endl;
+                        tempMean = treeTable[nodePositionInTreeTable].meanVector;
+                        //cout << testPS.pSet[i].pC.p.y << endl;
+                        tempMean[0] = tempMean[0] + testPS.pSet[i].pC.p.x;
+                        tempMean[1] = tempMean[1] + testPS.pSet[i].pC.p.y;
+                        tempMean[2] = tempMean[2] + testPS.pSet[i].pC.p.d;
+                        estimatedMean.push_back(tempMean);
                     }
                 }
             }
         }
     }
-}*/
+}

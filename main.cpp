@@ -18,7 +18,7 @@
 #include "DTree.h"
 
 #define PATCH_SET_SIZE 40
-#define DATA_SET_SIZE 20
+#define DATA_SET_SIZE 10
 #define n 6
 #define THESHOLD_MAX 1000
 using namespace cv;
@@ -88,7 +88,7 @@ int main(int argc, const char * argv[])
 	string cal_filename = depth_path + "depth.cal";
     vector<float> calM;
     calM = loadCalFile(cal_filename);
-    vector<threeDPostCal> depthTo3D,integralImage;
+    /***vector<threeDPostCal> depthTo3D,integralImage;
     vector<int16_t*> trainingSet = loadTrainingSet(depth_path);
     vector<ground_Truth> groundTruthSet = loadGroundSet(depth_path);
     vector<vector<float>> groundTruthSetBin = loadGroundSetBin(bin_path);
@@ -111,13 +111,7 @@ int main(int argc, const char * argv[])
         cout << "image " << i << " done" << endl;
     }
 
-   /*for(int row = 0; row < 480; row++){
-        for(int col = 0; col < 640; col++){
-            //depthI.at<int16_t>(row, col) = depthTo3D[640*row + col].d;
-            cout << img3DList[0].at<Vec3f>(row,col) << endl;
-            //cout << depthIntegral[5].at<double>(row,col) << endl;
-        }
-    }*/
+
     
     
     cout << trainingSet.size() << endl;
@@ -140,36 +134,52 @@ int main(int argc, const char * argv[])
             wholeDataSet.push_back(pS.pSet[j]);
         }
     }
+    
+    
     //cout << "depthTo3D size : " << depthTo3D.size() << endl;
     //cout << "depthTo3Dset size : " << depthTo3DSet.size() << endl;
     
 
     
-    string outputTreefile = "tree.txt";
+    /*string outputTreefile = "tree1.txt";
     DTree tree2(10);
 
     tree2.growTree(wholeDataSet, depthIntegral);
-    tree2.write_tree(outputTreefile);
+    tree2.write_tree(outputTreefile);*/
     
     
-    /***
+    
     DTree testTree;
     testTree.read_tree(treefile);
     //cout << testTree.noNodes << endl;
-    cout << testTree.treeTable[5].bestF[0].x << endl;
+    //cout << testTree.treeTable[5].bestF[0].x << endl;
     
     string testImagefile = "/Users/Knowhow10/Desktop/01/frame_00025_depth.bin";
     string testImageGTfile = "/Users/Knowhow10/Desktop/db_annotations/01/frame_00025_depth.bin";
     int16_t* testImage = loadDepthImageCompressed(testImagefile.c_str());
     boundingBox testBbox = getBoundingBox(testImage);
-    vector<threeDPostCal> test3D = get3dFromDepth(testImage,calM);
-    vector<float> testGt = loadPoseBin(testImageGTfile);
-    testTree.regressionEstimation(test3D, testBbox, testGt);
+    vector<vector<float>> groundTruthSetBin = loadGroundSetBin(bin_path);
+    Mat* channels = new Mat[3];
+    Mat depthI = Mat(480, 640, CV_32FC3);
+    Mat sumI = Mat(481, 641, CV_64FC3);
+    Mat img3D;
+    getIntegralImageDepthChannel(depthI,testImage,channels,calM,img3D);
+    integral(channels[2],sumI);
+    vector<float> testGt = groundTruthSetBin[21];
+        cout << "test " << testGt[0] << " " << testGt[1] << " " << testGt[2] << " " << testGt[3] << " " << testGt[4] << " " << testGt[5] << endl;
+    vector<vector<float>> estimatedMean;
+    testTree.regressionEstimation(sumI, testBbox, testGt, estimatedMean,img3D);
+    cout << " size mean " << estimatedMean.size() << endl;
+    vector<float> estimatedMean2 = computeMeanVector(estimatedMean);
+    
+        
+    cout << "estimated " << estimatedMean2[0] << " " << estimatedMean2[1] << " " << estimatedMean2[2] << " " << estimatedMean2[3] << " " << estimatedMean2[4] << " " << estimatedMean2[5] << endl;
+    cout << "test " << testGt[0] << " " << testGt[1] << " " << testGt[2] << " " << testGt[3] << " " << testGt[4] << " " << testGt[5] << endl;
     //PatchSet testPS(PATCH_SET_SIZE);
     //testPS.getRandomPatches(testBbox, test3D, testGt);
     //testPS.pSet[0].rectangles = testTree.treeTable[0].bestF;
     //cout << testPS.pSet[0].rectangles[0].x << endl;
-    ***/
+    
     
     return 0;
 }
@@ -459,7 +469,7 @@ void generateRandomThreshold(vector<int>& rT){
     
 }
 
-void writePreProcessedData(vector<HPatch> PS, vector<vector<sub_patch>>& rectangles, vector<int>& rT, string fname){
+/*void writePreProcessedData(vector<HPatch> PS, vector<vector<sub_patch>>& rectangles, vector<int>& rT, string fname){
     generateRandomSubPatches(rectangles);
     generateRandomThreshold(rT);
     ofstream fOut;
@@ -478,7 +488,7 @@ void writePreProcessedData(vector<HPatch> PS, vector<vector<sub_patch>>& rectang
     }
     fOut.close();
     
-}
+}*/
 
 
 vector<float> computeMeanVector(const vector<vector<float>>& groundTruthSet){

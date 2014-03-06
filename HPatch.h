@@ -61,7 +61,7 @@ public:
     int getPy();
     void setPatchCenter(Mat dImage);
     patchCenter getPatchCenter(vector<threeDPostCal> dImage);
-    void chooseSubPatches(vector<sub_patch> SP);
+    void chooseSubPatches(vector<sub_patch> SP,Mat itegralImage);
     void loadSubPatches(const string fname);
     void setSubPatchDistance(vector<threeDPostCal> dImage);
     float getSubPatchDistance();
