@@ -7,9 +7,10 @@
 //
 
 #include "DTree.h"
-#define n_P 400
+#define n_F 10
+#define n_T 10
 #define THESHOLD_MAX 1000
-#define DEPTH_TREE 16
+#define DEPTH_TREE 15
 string integralImageFilename = "integral3.txt";
 string treeFilename = "tree.txt";
 //read tree file
@@ -28,7 +29,7 @@ void Node::write(ofstream& fInp){
 void Node::generateRandomSubPatches(const vector<HPatch>& PS){
     sub_patch temp;
     vector<sub_patch> tempSub;
-    for (int j = 0; j < n_P; j++){
+    for (int j = 0; j < n_F; j++){
         for(int i = 0; i < 2; i++){
             temp.x = rand() % 80;
             temp.y = rand() % 80;
@@ -49,7 +50,7 @@ void Node::generateRandomSubPatches(const vector<HPatch>& PS){
 void Node::generateRandomThreshold(const vector<HPatch>& PS){
     
     int rt = 0;
-    for (int i = 0; i < n_P; i++){
+    for (int i = 0; i < n_T; i++){
         rt = -THESHOLD_MAX + rand() % (2*THESHOLD_MAX);
         rT.push_back(rt);
     }
@@ -83,9 +84,11 @@ void Node::findBestT(vector<HPatch> PS, vector<Mat> itegralImage){
         PS[i].chooseSubPatches(rectangles[i]);
         PS[i].setSubPatchDistance(dImage);
     }*/
-    
+    for(int k = 0; k < rT.size(); k++ ){
+        
+        tempRT = rT[k];
         for(int j = 0; j < rectangles.size(); j++){
-            tempRT = rT[j];
+            
             //cout << "threshold : " << rT[j] << endl;
             
             for( int i = 0; i < PS.size(); i++){
@@ -155,7 +158,7 @@ void Node::findBestT(vector<HPatch> PS, vector<Mat> itegralImage){
     //cout << " isleaf " << isleaf << endl;
         //cout << best_T << endl;
         //cout << "ig " << infoGainTemp << endl;
-
+    }
 
    bestF.push_back(tempS1);  bestF.push_back(tempS2);
     
@@ -382,7 +385,7 @@ void DTree::write_tree(const string& fname){
 }
 
 
-void DTree::loadPreProcessedData(const string& fname, vector<HPatch>& PS ){
+/*void DTree::loadPreProcessedData(const string& fname, vector<HPatch>& PS ){
     ifstream fInp;
     fInp.open(integralImageFilename);
     float tempSB = 0;
@@ -408,7 +411,7 @@ void DTree::loadPreProcessedData(const string& fname, vector<HPatch>& PS ){
         rt.push_back(tempRT);
     }
 
-}
+}*/
 
 //build the tree
 void DTree::growTree(vector<HPatch> PS, vector<Mat> dImage){
@@ -417,10 +420,9 @@ void DTree::growTree(vector<HPatch> PS, vector<Mat> dImage){
 
 
 void DTree::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> testGt,vector<vector<float>>& estimatedMean,Mat img3D){
-    PatchSet testPS(40);
+    PatchSet testPS(100);
     testPS.getRandomPatches(testBbox, img3D, testGt);
-    cout << testPS.pSet.size() << endl;
-    //cout << treeTable[0].best_T << endl;
+    //cout << testPS.pSet.size() << endl;
     vector<int> accumlativeNodesAtEachLevel;
     int accumlativeSum = 0;
     for(int i = 0;  i < nodesAtEachLevel.size(); i++) {
@@ -428,14 +430,14 @@ void DTree::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> t
         
         accumlativeNodesAtEachLevel.push_back(accumlativeSum);
         accumlativeSum += nodesAtEachLevel[i];
-        cout << " nodesAtEachLevel " << nodesAtEachLevel[i] << endl;
-        cout << " accumlativeNodesAtEachLevel " << accumlativeNodesAtEachLevel[i] << endl;
+        //cout << " nodesAtEachLevel " << nodesAtEachLevel[i] << endl;
+        //cout << " accumlativeNodesAtEachLevel " << accumlativeNodesAtEachLevel[i] << endl;
     }
     
     for(int i = 0; i < testPS.pSet.size(); i++){
         int chosenNode = 0;
         vector<float> tempMean;
-        cout << endl << "considering patch " << i << "..." << endl;
+        //cout << endl << "considering patch " << i << "..." << endl;
         for(int j = 0; j < nodesAtEachLevel.size(); j++){
             //cout << " j " << j << endl;
             //bool chosen = 0;
@@ -477,18 +479,25 @@ void DTree::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> t
                             k = nodesAtEachLevel[j];
                         }
                     }
-                    cout << "at level: " << j << ", subPatch Distance = " << testPS.pSet[i].subPDistance << ", threshold = " << treeTable[nodePositionInTreeTable].best_T << ", chosenNode = " << chosenNode << " (" << direction << ")" << endl;
+                    //cout << "at level: " << j << ", subPatch Distance = " << testPS.pSet[i].subPDistance << ", threshold = " << treeTable[nodePositionInTreeTable].best_T << ", chosenNode = " << chosenNode << " (" << direction << ")" << endl;
                     if (outputMeanVector) {
-                        cout << "stopped node position in tree table = " << nodePositionInTreeTable << ", mean vector = ";
+                        //cout << "stopped node position in tree table = " << nodePositionInTreeTable << ", mean vector = ";
                         for(int a = 0; a < treeTable[nodePositionInTreeTable].meanVector.size(); a++)
-                            cout << treeTable[nodePositionInTreeTable].meanVector[a] << " ";
-                        cout << endl;
-                        tempMean = treeTable[nodePositionInTreeTable].meanVector;
-                        //cout << testPS.pSet[i].pC.p.y << endl;
-                        tempMean[0] = tempMean[0] + testPS.pSet[i].pC.p.x;
-                        tempMean[1] = tempMean[1] + testPS.pSet[i].pC.p.y;
-                        tempMean[2] = tempMean[2] + testPS.pSet[i].pC.p.d;
-                        estimatedMean.push_back(tempMean);
+                            //cout << treeTable[nodePositionInTreeTable].meanVector[a] << " ";
+                        //cout << endl;
+                        //cout << testPS.pSet[i].pC.p.d <<endl;
+                        //if(treeTable[nodePositionInTreeTable].trace < 400 ){
+                        
+                        if(testPS.pSet[i].pC.p.d != 0 && treeTable[nodePositionInTreeTable].trace < 1000  ){
+                            
+                            //cout << "trace " << treeTable[nodePositionInTreeTable].trace << endl;
+                            tempMean = treeTable[nodePositionInTreeTable].meanVector;
+                            //cout << testPS.pSet[i].pC.p.y << endl;
+                            tempMean[0] = tempMean[0] + testPS.pSet[i].pC.p.x;
+                            tempMean[1] = tempMean[1] + testPS.pSet[i].pC.p.y;
+                            tempMean[2] = tempMean[2] + testPS.pSet[i].pC.p.d;
+                            estimatedMean.push_back(tempMean);
+                        }
                     }
                 }
             }

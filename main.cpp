@@ -15,15 +15,16 @@
 #include <cstdlib>
 #include <cmath>
 #include <ctime>
-#include "DTree.h"
+#include "DForest.h"
 
 #define PATCH_SET_SIZE 40
-#define DATA_SET_SIZE 10
+#define DATA_SET_SIZE 496
+#define NO_TEST_SUBJECTS 5
 #define n 6
 #define THESHOLD_MAX 1000
+#define NUMBER_TREES 5
 using namespace cv;
-string preProcessedDataFile = "randomPatches.txt";
-string treefile = "tree.txt";
+
 bool swaped=false;
 
 int g_max_z = 1300;
@@ -41,13 +42,13 @@ vector<float> loadCalFile(string fname);
 vector<float> loadPoseBin(string fname);
 
 //load trainingset
-vector<int16_t*> loadTrainingSet(string depth_path);
+void loadTrainingSet(string depth_path,vector<int16_t*>& trainingSet);
 
 //load groundtruthset txt
 vector<ground_Truth> loadGroundSet(string depth_path);
 
 //load groundtruthset bin
-vector<vector<float>> loadGroundSetBin(string bin_path);
+void loadGroundSetBin(string bin_path,vector<vector<float>>& groundSetBin );
 
 //int to string
 string convertInt(int number);
@@ -81,104 +82,96 @@ void getIntegralImageDepthChannel(Mat& depthI,int16_t* trainingSet,Mat* channels
 
 int main(int argc, const char * argv[])
 {
-    //srand(time(NULL));
+    srand(time(NULL));
     
-    string depth_path = "/Users/Knowhow10/Desktop/01/";
-    string bin_path = "/Users/Knowhow10/Desktop/db_annotations/01/";
-	string cal_filename = depth_path + "depth.cal";
-    vector<float> calM;
-    calM = loadCalFile(cal_filename);
-    /***vector<threeDPostCal> depthTo3D,integralImage;
-    vector<int16_t*> trainingSet = loadTrainingSet(depth_path);
-    vector<ground_Truth> groundTruthSet = loadGroundSet(depth_path);
-    vector<vector<float>> groundTruthSetBin = loadGroundSetBin(bin_path);
-    boundingBox bbox;
-    depthTo3D = get3dFromDepth(trainingSet[0],calM);
-    vector<Mat> depthIntegral;
-    //vector<vector<Mat>> channelsList;
+
+
+    vector<threeDPostCal> integralImage;
+    vector<int16_t*> trainingSet;
+    vector<vector<float>> groundTruthSetBin;
+    vector<HPatch> wholeDataSet;
     vector<Mat> img3DList;
-    for(int i = 0; i < trainingSet.size(); i++){
-        
-        Mat* channels = new Mat[3];
-        Mat depthI = Mat(480, 640, CV_32FC3);
-        Mat sumI = Mat(481, 641, CV_64FC3);
-        Mat img3D;
-        getIntegralImageDepthChannel(depthI,trainingSet[i],channels,calM,img3D);
-        
-        integral(channels[2],sumI);
-        depthIntegral.push_back(sumI);
-        img3DList.push_back(img3D);
-        cout << "image " << i << " done" << endl;
+    vector<Mat> depthIntegral;
+    //read the images
+    for(int j = 0; j < NO_TEST_SUBJECTS; j++){
+        string depth_path = "/Users/Knowhow10/Downloads/kinect_head_pose_db/0"+convertInt(j+1)+"/";
+        string bin_path = "/Users/Knowhow10/Desktop/db_annotations/0"+convertInt(j+1)+"/";
+        loadTrainingSet(depth_path,trainingSet);
+        loadGroundSetBin(bin_path,groundTruthSetBin);
+        cout << trainingSet.size() << endl;
     }
 
-
-    
-    
-    cout << trainingSet.size() << endl;
-    
-    //vector<PatchSet> pSList;
-    vector<HPatch> wholeDataSet;
-    vector<vector<threeDPostCal>> depthTo3DSet;
-    for( int i = 0; i < DATA_SET_SIZE; i++ ){
+    for(int i = 0; i < NO_TEST_SUBJECTS; i++){
+        cout << i << "th person " << endl;
+        string depth_path = "/Users/Knowhow10/Downloads/kinect_head_pose_db/0"+convertInt(i+1)+"/";
+        string cal_filename = depth_path + "depth.cal";
+        vector<float> calM;
+        calM = loadCalFile(cal_filename);
+        for(int k = 0; k < DATA_SET_SIZE; k++ ){
+            //cout << k << "th image " <<endl;
+            Mat* channels = new Mat[3];
+            Mat depthI = Mat(480, 640, CV_32FC3);
+            Mat sumI = Mat(481, 641, CV_64FC3);
+            Mat img3D;
+            getIntegralImageDepthChannel(depthI,trainingSet[i*DATA_SET_SIZE+i],channels,calM,img3D);
+            integral(channels[2],sumI);
+            depthIntegral.push_back(sumI);
+            img3DList.push_back(img3D);
+        }
+        
+    }
+    //generating the patches
+    boundingBox bbox;
+    for( int i = 0; i < trainingSet.size(); i++ ){
         cout << "#####     i = " << i << endl;
         PatchSet pS(PATCH_SET_SIZE);
         bbox = getBoundingBox(trainingSet[i]);
         //depthTo3D = get3dFromDepth(trainingSet[i],calM);
-        //depthTo3DSet.push_back(depthTo3D);
         pS.getRandomPatches(bbox, img3DList[i], groundTruthSetBin[i]);
-        cout << " gt : " << groundTruthSetBin[i][0] << " " << groundTruthSetBin[i][1] << " " << groundTruthSetBin[i][2] << " " << groundTruthSetBin[i][3] << " " << groundTruthSetBin[i][4] << " " << groundTruthSetBin[i][5] << endl;
-        cout << " meanVector : " << pS.pSet[0].groundT[0] << " " << pS.pSet[0].groundT[1] << " " << pS.pSet[0].groundT[2] << " " << pS.pSet[0].groundT[3] << " " << pS.pSet[0].groundT[4] << " " << pS.pSet[0].groundT[5] << endl;
-        //pSList.push_back(pS);
+        //cout << " gt : " << groundTruthSetBin[i][0] << " " << groundTruthSetBin[i][1] << " " << groundTruthSetBin[i][2] << " " << groundTruthSetBin[i][3] << " " << groundTruthSetBin[i][4] << " " << groundTruthSetBin[i][5] << endl;
         for (int j = 0; j <  PATCH_SET_SIZE; j++){
             pS.pSet[j].index = i;
             wholeDataSet.push_back(pS.pSet[j]);
         }
+        cout << "number of patches " << wholeDataSet.size() << endl;
     }
     
     
-    //cout << "depthTo3D size : " << depthTo3D.size() << endl;
-    //cout << "depthTo3Dset size : " << depthTo3DSet.size() << endl;
+    /*uncommment for modification here *****
+    DForest forest(NUMBER_TREES);
+    forest.growForest(wholeDataSet, depthIntegral);
+    forest.writeForest();
+    */
     
-
+    //DTree testTree;
+    //testTree.read_tree(treefile);
     
-    /*string outputTreefile = "tree1.txt";
-    DTree tree2(10);
-
-    tree2.growTree(wholeDataSet, depthIntegral);
-    tree2.write_tree(outputTreefile);*/
+    /*DForest forest(NUMBER_TREES);
+    forest.loadTree();
     
-    
-    
-    DTree testTree;
-    testTree.read_tree(treefile);
-    //cout << testTree.noNodes << endl;
-    //cout << testTree.treeTable[5].bestF[0].x << endl;
-    
-    string testImagefile = "/Users/Knowhow10/Desktop/01/frame_00025_depth.bin";
-    string testImageGTfile = "/Users/Knowhow10/Desktop/db_annotations/01/frame_00025_depth.bin";
+    string testImagefile = "/Users/Knowhow10/Downloads/kinect_head_pose_db/03/frame_00100_depth.bin";
+    string testImageGTfile = "/Users/Knowhow10/Desktop/db_annotations/03/frame_00100_pose.bin";
     int16_t* testImage = loadDepthImageCompressed(testImagefile.c_str());
     boundingBox testBbox = getBoundingBox(testImage);
-    vector<vector<float>> groundTruthSetBin = loadGroundSetBin(bin_path);
+    //vector<vector<float>> groundTruthSetBin = loadGroundSetBin(bin_path);
     Mat* channels = new Mat[3];
     Mat depthI = Mat(480, 640, CV_32FC3);
     Mat sumI = Mat(481, 641, CV_64FC3);
     Mat img3D;
     getIntegralImageDepthChannel(depthI,testImage,channels,calM,img3D);
     integral(channels[2],sumI);
-    vector<float> testGt = groundTruthSetBin[21];
+    vector<float> testGt = loadPoseBin(testImageGTfile);
         cout << "test " << testGt[0] << " " << testGt[1] << " " << testGt[2] << " " << testGt[3] << " " << testGt[4] << " " << testGt[5] << endl;
-    vector<vector<float>> estimatedMean;
-    testTree.regressionEstimation(sumI, testBbox, testGt, estimatedMean,img3D);
-    cout << " size mean " << estimatedMean.size() << endl;
-    vector<float> estimatedMean2 = computeMeanVector(estimatedMean);
+    //vector<vector<float>> estimatedMean;
+    //testTree.regressionEstimation(sumI, testBbox, testGt, estimatedMean,img3D);
+    
+    forest.regressionEstimation(sumI, testBbox, testGt, img3D);
+    cout << "size mean " << forest.estimatedMean.size() << endl;
+    vector<float> estimatedMean2 = computeMeanVector(forest.estimatedMean);
     
         
     cout << "estimated " << estimatedMean2[0] << " " << estimatedMean2[1] << " " << estimatedMean2[2] << " " << estimatedMean2[3] << " " << estimatedMean2[4] << " " << estimatedMean2[5] << endl;
-    cout << "test " << testGt[0] << " " << testGt[1] << " " << testGt[2] << " " << testGt[3] << " " << testGt[4] << " " << testGt[5] << endl;
-    //PatchSet testPS(PATCH_SET_SIZE);
-    //testPS.getRandomPatches(testBbox, test3D, testGt);
-    //testPS.pSet[0].rectangles = testTree.treeTable[0].bestF;
-    //cout << testPS.pSet[0].rectangles[0].x << endl;
+    cout << "ground_T " << testGt[0] << " " << testGt[1] << " " << testGt[2] << " " << testGt[3] << " " << testGt[4] << " " << testGt[5] << endl;*/
     
     
     return 0;
@@ -255,9 +248,9 @@ vector<float> loadCalFile(string fname){
 
 
 //load trainingset
-vector<int16_t*> loadTrainingSet(string depth_path){
+void loadTrainingSet(string depth_path,vector<int16_t*>& trainingSet){
     
-    vector<int16_t*> trainingSet;
+    
     int16_t* img = new int16_t[640*480];
     string subS = "";
     string depthFname = depth_path;
@@ -275,7 +268,7 @@ vector<int16_t*> loadTrainingSet(string depth_path){
 		trainingSet.push_back(img);
 		
 	}
-    return trainingSet;
+    
 }
 
 //load groundtruthset
@@ -299,8 +292,8 @@ vector<ground_Truth> loadGroundSet(string depth_path){
     return groundTruthSet;
 }
 
-vector<vector<float>> loadGroundSetBin(string bin_path){
-    vector<vector<float>> groundSetBin;
+void loadGroundSetBin(string bin_path,vector<vector<float>>& groundSetBin){
+    
     vector<float> tempG;
     string subS = "";
     string poseFname = bin_path;
@@ -318,7 +311,6 @@ vector<vector<float>> loadGroundSetBin(string bin_path){
     }
     
     
-    return groundSetBin;
 }
 
 string convertInt(int number)
@@ -360,7 +352,7 @@ vector<float> loadPoseBin(string fname){
 	}
     for (int i = 0; i < 6; i ++)
         gt1.push_back(gt[i]);
-   // cout << gt[0] << " " << gt[1] << " " << gt[2] << endl;
+    //cout << gt[0] << " " << gt[1] << " " << gt[2] << endl;
     return gt1;
 }
 
