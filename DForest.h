@@ -27,4 +27,5 @@ public:
     void writeForest();
     void loadTree();
     void regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> testGt,Mat img3D);
+    vector<HPatch> generateSubSet(vector<HPatch>, int size);
 };

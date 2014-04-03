@@ -23,7 +23,7 @@ int HPatch::getPy(){
 }
 
 void HPatch::setPatchCenter(Mat dImage){
-    int centerP = (this->p_y+40 ) * 640 + (this->p_x+40);
+    //int centerP = (this->p_y+40 ) * 640 + (this->p_x+40);
 	//cout << dImage.size() << endl;
 	//cout << centerP <<endl;
 	pC.c = this->p_x+40;
@@ -110,8 +110,9 @@ float HPatch::getSubPatchDistance(){
     return subPDistance;
 }
 
-float HPatch::findEuclideanDistance(ground_Truth gt){
-return sqrt(pow(pC.p.x - gt.nosePosition[0],2) + pow(pC.p.y - gt.nosePosition[1],2)+pow(pC.p.d - gt.nosePosition[2],2));
+float HPatch::findEuclideanDistance(vector<float> gt){
+
+    return sqrt(pow(pC.p.x - gt[0],2) + pow(pC.p.y - gt[1],2)+pow(pC.p.d - gt[2],2));
     
 }
 
@@ -124,22 +125,31 @@ void HPatch::loadGroundTruth(vector<float> gt){
     
 }
 
-void PatchSet::getRandomPatches(boundingBox bbox, Mat dImage, vector<float> groundT){
-	for (int i = 0; i < size; i++){
+void PatchSet::getRandomPatches(boundingBox bbox, Mat dImage, vector<float> groundT, bool p){
+	//for (int i = 0; i < size; i++){
+    for(int i = 0; i < size/2; i++){
 		HPatch temp(80,80);
         temp.setPatchXY(bbox);
+        //cout << "bbox " << bbox.x <<  " " << bbox.y << " " << bbox.width << " " << bbox.height << endl;
         //cout << "xp : "<< temp.getPx() << " yp : "<< temp.getPy() << endl;
 		temp.setPatchCenter(dImage);
         //temp.chooseSubPatches();
         //cout << "f1 x, y : " << temp.f[1].x << " , " << temp.f[1].y << endl;
-       // temp.setSubPatchDistance(dImage);
+        //temp.setSubPatchDistance(dImage);
+        //cout << temp.pC.r << " " << temp.pC.c << endl;
+        //cout << groundT[0] << " " << groundT[1] << " " << groundT[2] << endl;
+        //vector<float> nearestPoint;
+        //cout << temp.findEuclideanDistance(groundT) << endl;
+        
         temp.loadGroundTruth(groundT);
         //cout << temp.pC.c*640+temp.pC.r << endl;
         temp.groundT[0] = temp.groundT[0] - temp.pC.p.x;
         temp.groundT[1] = temp.groundT[1] - temp.pC.p.y;
         temp.groundT[2] = temp.groundT[2] - temp.pC.p.d;
-		pSet.push_back(temp);
+        temp.positive = p;
+        pSet.push_back(temp);
         this->storeGroundTruth(groundT);
+        
         //cout << temp.getSubPatchDistance() << endl;
 	}
     

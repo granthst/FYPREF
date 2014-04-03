@@ -65,7 +65,7 @@ public:
     void loadSubPatches(const string fname);
     void setSubPatchDistance(vector<threeDPostCal> dImage);
     float getSubPatchDistance();
-    float findEuclideanDistance(ground_Truth gt);
+    float findEuclideanDistance(vector<float> gt);
     void loadGroundTruth(vector<float> groundT);
     vector<sub_patch> rectangles;
     vector<float> groundT;
@@ -76,7 +76,7 @@ public:
     //vector<sub_patch> f;
     patchCenter pC;
     float subPDistance;
-    
+    bool positive;
     void printRectangles();
 };
 
@@ -86,7 +86,7 @@ public:
     PatchSet(){}
     PatchSet(int n){size = n;}
     ~PatchSet(){}
-    void getRandomPatches(boundingBox bbox , Mat dImage, vector<float> groundT );
+    void getRandomPatches(boundingBox bbox , Mat dImage, vector<float> groundT ,bool p);
     void storeGroundTruth(vector<float> groundT);
     vector<HPatch> pSet;
     vector<float> groundT;

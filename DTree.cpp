@@ -7,10 +7,13 @@
 //
 
 #include "DTree.h"
-#define n_F 10
+#define n_F 50
 #define n_T 10
 #define THESHOLD_MAX 1000
 #define DEPTH_TREE 15
+#define TRACE_MAX 400
+#define SAMPLE_PATCHES 10000
+#define P_TH 0.5
 string integralImageFilename = "integral3.txt";
 string treeFilename = "tree.txt";
 //read tree file
@@ -89,7 +92,7 @@ void Node::findBestT(vector<HPatch> PS, vector<Mat> itegralImage){
         tempRT = rT[k];
         for(int j = 0; j < rectangles.size(); j++){
             
-            //cout << "threshold : " << rT[j] << endl;
+            //cout << "threshold : " << k << " : " << rT[k] << " for test " << j << endl;
             
             for( int i = 0; i < PS.size(); i++){
                 //cout << " f1 x " << rectangles[j][0].x << endl << endl;
@@ -152,6 +155,7 @@ void Node::findBestT(vector<HPatch> PS, vector<Mat> itegralImage){
 
     if(((leftSplit.size()==0) && (rightSplit.size()==0)) || depth == DEPTH_TREE){
         //cout << " leaf node " << endl;
+        computePositiveP();
         isleaf = 1;
     }
     //cout << "depth : " << depth << endl;
@@ -299,6 +303,16 @@ float traceCovariance(vector<vector<float>> cv){
     return t;
 }
 
+void Node::computePositiveP(){
+    float count = 0;
+    for(int i = 0; i < beforeSplit.size(); i++ ){
+        if(beforeSplit[i].positive == 0)
+            count++;
+    }
+    positiveP = count/beforeSplit.size();
+    
+}
+
 //load tree
 void DTree::read_tree(const string& fname){
     ifstream fInp;
@@ -309,7 +323,7 @@ void DTree::read_tree(const string& fname){
     int tempBest_T;
     bool tempIsLeaf;
     vector<float> tempMean;
-    float tempData,tempTrace;
+    float tempData,tempTrace,tempP;
     fInp.open(fname);
     int nodeCounter = 0;
     int d = -1;
@@ -345,9 +359,10 @@ void DTree::read_tree(const string& fname){
                 fInp >> tempData;
                 tempMean.push_back(tempData);
             }
-            fInp >> tempTrace;
+            fInp >> tempTrace >> tempP;
             tempNode.meanVector = tempMean;
             tempNode.trace = tempTrace;
+            tempNode.positiveP = tempP;
             tempMean.clear();
         }
         tempNode.depth = tempDepth; tempNode.isleaf = tempIsLeaf;
@@ -378,40 +393,13 @@ void DTree::write_tree(const string& fname){
         }else {
             vector<float> mean = treeTable[j].computeMeanVector(treeTable[j].beforeSplit);
             vector<vector<float>> cv = treeTable[j].computeCovariance(treeTable[j].beforeSplit,1);
-            fOut<< mean[0] << " " << mean[1] << " " << mean[2] << " " << mean[3] << " " << mean[4] << " " << mean[5] << " " << traceCovariance(cv) <<  endl;
+            fOut<< mean[0] << " " << mean[1] << " " << mean[2] << " " << mean[3] << " " << mean[4] << " " << mean[5] << " " << traceCovariance(cv) << " " << treeTable[j].positiveP <<  endl;
         }
     }
     fOut.close();
 }
 
 
-/*void DTree::loadPreProcessedData(const string& fname, vector<HPatch>& PS ){
-    ifstream fInp;
-    fInp.open(integralImageFilename);
-    float tempSB = 0;
-    float tempRT = 0;
-    sub_patch temp;
-    int tempPX,tempPY;
-    for(int j = 0; j < n_P; j++){
-        for( int i = 0; i < n_P; i++){
-            fInp >> tempPX >> tempPY;
-            if(j == 0){
-                PS[i].p_x = tempPY;
-                PS[i].p_x = tempPX;
-            }
-            
-            fInp >> temp.x >> temp.y >> temp.w >> temp.h;
-            f1.push_back(temp);
-            fInp >> temp.x >> temp.x >> temp.w >> temp.h;
-            f2.push_back(temp);
-            
-            fInp >> tempSB >> tempRT;
-            subD.push_back(tempSB);
-        }
-        rt.push_back(tempRT);
-    }
-
-}*/
 
 //build the tree
 void DTree::growTree(vector<HPatch> PS, vector<Mat> dImage){
@@ -420,8 +408,8 @@ void DTree::growTree(vector<HPatch> PS, vector<Mat> dImage){
 
 
 void DTree::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> testGt,vector<vector<float>>& estimatedMean,Mat img3D){
-    PatchSet testPS(100);
-    testPS.getRandomPatches(testBbox, img3D, testGt);
+    PatchSet testPS(SAMPLE_PATCHES);
+    testPS.getRandomPatches(testBbox, img3D, testGt,0);
     //cout << testPS.pSet.size() << endl;
     vector<int> accumlativeNodesAtEachLevel;
     int accumlativeSum = 0;
@@ -488,11 +476,11 @@ void DTree::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> t
                         //cout << testPS.pSet[i].pC.p.d <<endl;
                         //if(treeTable[nodePositionInTreeTable].trace < 400 ){
                         
-                        if(testPS.pSet[i].pC.p.d != 0 && treeTable[nodePositionInTreeTable].trace < 1000  ){
+                        if(testPS.pSet[i].pC.p.d != 0 && treeTable[nodePositionInTreeTable].trace < TRACE_MAX && testPS.pSet[i].subPDistance != 0 && treeTable[nodePositionInTreeTable].positiveP >= P_TH ){
                             
                             //cout << "trace " << treeTable[nodePositionInTreeTable].trace << endl;
                             tempMean = treeTable[nodePositionInTreeTable].meanVector;
-                            //cout << testPS.pSet[i].pC.p.y << endl;
+                            //cout << testPS.pSet[i].pC.p.x << endl;
                             tempMean[0] = tempMean[0] + testPS.pSet[i].pC.p.x;
                             tempMean[1] = tempMean[1] + testPS.pSet[i].pC.p.y;
                             tempMean[2] = tempMean[2] + testPS.pSet[i].pC.p.d;

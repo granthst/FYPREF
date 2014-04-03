@@ -22,7 +22,8 @@
 #define NO_TEST_SUBJECTS 5
 #define n 6
 #define THESHOLD_MAX 1000
-#define NUMBER_TREES 5
+#define NUMBER_TREES 1
+#define NO_MEAN 100
 using namespace cv;
 
 bool swaped=false;
@@ -30,6 +31,8 @@ bool swaped=false;
 int g_max_z = 1300;
 
 int n_patch = 40;
+
+
 //Ultility functions
 
 //load depth image
@@ -79,14 +82,27 @@ vector<vector<float>> computeCovariance(const vector<vector<float>>& groundTruth
 
 void getIntegralImageDepthChannel(Mat& depthI,int16_t* trainingSet,Mat* channels,vector<float> calM,Mat& img3D);
 
+vector<double> Error(vector<float> estimated, vector<float> gt);
+
+void loadRGBImages(vector<Mat>& rgb, string filepath);
+
+void loadMaskImages(vector<Mat>& rgb, string filepath);
+
+void saveBBox(vector<boundingBox> masks, string fname);
+
+void loadBBox(vector<boundingBox>& bboxSet, int size);
+
+void findMasks(vector<Mat> masks, vector<boundingBox>& headMasks);
+
+boundingBox findMask(Mat mask);
 
 int main(int argc, const char * argv[])
 {
     srand(time(NULL));
     
 
-
-    vector<threeDPostCal> integralImage;
+    
+    /*vector<threeDPostCal> integralImage;
     vector<int16_t*> trainingSet;
     vector<vector<float>> groundTruthSetBin;
     vector<HPatch> wholeDataSet;
@@ -100,7 +116,7 @@ int main(int argc, const char * argv[])
         loadGroundSetBin(bin_path,groundTruthSetBin);
         cout << trainingSet.size() << endl;
     }
-
+    
     for(int i = 0; i < NO_TEST_SUBJECTS; i++){
         cout << i << "th person " << endl;
         string depth_path = "/Users/Knowhow10/Downloads/kinect_head_pose_db/0"+convertInt(i+1)+"/";
@@ -120,37 +136,46 @@ int main(int argc, const char * argv[])
         }
         
     }
+    vector<boundingBox> headmasks;
+    loadBBox(headmasks, NO_TEST_SUBJECTS);
     //generating the patches
     boundingBox bbox;
     for( int i = 0; i < trainingSet.size(); i++ ){
         cout << "#####     i = " << i << endl;
         PatchSet pS(PATCH_SET_SIZE);
         bbox = getBoundingBox(trainingSet[i]);
+        //cout << "bbox big" << bbox.x <<  " " << bbox.y << endl;
         //depthTo3D = get3dFromDepth(trainingSet[i],calM);
-        pS.getRandomPatches(bbox, img3DList[i], groundTruthSetBin[i]);
+        pS.getRandomPatches(headmasks[i], img3DList[i], groundTruthSetBin[i],0);
+        //cout << "number of positive patches" << pS.pSet.size() << endl;
+        pS.getRandomPatches(bbox, img3DList[i], groundTruthSetBin[i],1);
         //cout << " gt : " << groundTruthSetBin[i][0] << " " << groundTruthSetBin[i][1] << " " << groundTruthSetBin[i][2] << " " << groundTruthSetBin[i][3] << " " << groundTruthSetBin[i][4] << " " << groundTruthSetBin[i][5] << endl;
+        //cout << "number of patches" << pS.pSet.size() << endl;;
         for (int j = 0; j <  PATCH_SET_SIZE; j++){
             pS.pSet[j].index = i;
             wholeDataSet.push_back(pS.pSet[j]);
         }
-        cout << "number of patches " << wholeDataSet.size() << endl;
+        //cout << "number of patches " << wholeDataSet.size() << endl;
     }
     
     
-    /*uncommment for modification here *****
+    //build the forest
     DForest forest(NUMBER_TREES);
     forest.growForest(wholeDataSet, depthIntegral);
-    forest.writeForest();
-    */
+    forest.writeForest();*/
+    
     
     //DTree testTree;
     //testTree.read_tree(treefile);
     
-    /*DForest forest(NUMBER_TREES);
+    DForest forest(NUMBER_TREES);
     forest.loadTree();
-    
-    string testImagefile = "/Users/Knowhow10/Downloads/kinect_head_pose_db/03/frame_00100_depth.bin";
-    string testImageGTfile = "/Users/Knowhow10/Desktop/db_annotations/03/frame_00100_pose.bin";
+
+    string testImagefile = "/Users/Knowhow10/Downloads/kinect_head_pose_db/01/frame_00080_depth.bin";
+    string testImageGTfile = "/Users/Knowhow10/Desktop/db_annotations/01/frame_00080_pose.bin";
+    string cal_filename = "/Users/Knowhow10/Downloads/kinect_head_pose_db/01/depth.cal";
+    vector<float> calM;
+    calM = loadCalFile(cal_filename);
     int16_t* testImage = loadDepthImageCompressed(testImagefile.c_str());
     boundingBox testBbox = getBoundingBox(testImage);
     //vector<vector<float>> groundTruthSetBin = loadGroundSetBin(bin_path);
@@ -161,19 +186,56 @@ int main(int argc, const char * argv[])
     getIntegralImageDepthChannel(depthI,testImage,channels,calM,img3D);
     integral(channels[2],sumI);
     vector<float> testGt = loadPoseBin(testImageGTfile);
-        cout << "test " << testGt[0] << " " << testGt[1] << " " << testGt[2] << " " << testGt[3] << " " << testGt[4] << " " << testGt[5] << endl;
+    //cout << "test " << testGt[0] << " " << testGt[1] << " " << testGt[2] << " " << testGt[3] << " " << testGt[4] << " " << testGt[5] << endl;
     //vector<vector<float>> estimatedMean;
     //testTree.regressionEstimation(sumI, testBbox, testGt, estimatedMean,img3D);
+    vector<vector<float>> estimatedMean;
+    vector<float> trueMean;
+    for(int i = 0; i < NO_MEAN; i++){
+        forest.regressionEstimation(sumI, testBbox, testGt, img3D);
+        vector<float> estimatedMean2 = computeMeanVector(forest.estimatedMean);
+        cout << forest.estimatedMean.size() << endl;
+        estimatedMean.push_back(estimatedMean2);
+        cout << "estimated " << estimatedMean2[0] << " " << estimatedMean2[1] << " " << estimatedMean2[2] << " " << estimatedMean2[3] << " " << estimatedMean2[4] << " " << estimatedMean2[5] << endl;
+        cout << "ground_T " << testGt[0] << " " << testGt[1] << " " << testGt[2] << " " << testGt[3] << " " << testGt[4] << " " << testGt[5] << endl;
+        vector<double> error = Error(estimatedMean2,testGt);
+        cout << "nose error : " << error[0] << " mm " << endl;
+        cout << "angle error : " << error[1] << " degrees " << endl;
+    }
+    trueMean = computeMeanVector(estimatedMean);
+    cout << "estimated " << trueMean[0] << " " << trueMean[1] << " " << trueMean[2] << " " << trueMean[3] << " " << trueMean[4] << " " << trueMean[5] << endl;
     
-    forest.regressionEstimation(sumI, testBbox, testGt, img3D);
-    cout << "size mean " << forest.estimatedMean.size() << endl;
-    vector<float> estimatedMean2 = computeMeanVector(forest.estimatedMean);
-    
-        
-    cout << "estimated " << estimatedMean2[0] << " " << estimatedMean2[1] << " " << estimatedMean2[2] << " " << estimatedMean2[3] << " " << estimatedMean2[4] << " " << estimatedMean2[5] << endl;
-    cout << "ground_T " << testGt[0] << " " << testGt[1] << " " << testGt[2] << " " << testGt[3] << " " << testGt[4] << " " << testGt[5] << endl;*/
-    
-    
+    /***
+    string rgbImagePath = "/Users/Knowhow10/Downloads/kinect_head_pose_db/01/";
+    string bboxFilename = "bbox1.txt";
+    //Mat image;
+    //image = imread(rgbImagePath, CV_LOAD_IMAGE_COLOR);   // Read the file
+    //Mat sum = Mat(481, 641, CV_64FC3);
+    //integral(image,sum);
+    //cout << sum << endl;
+    //cout << image.rows << endl;
+    vector<int16_t*> trainingSet;
+    vector<Mat> rgbs;
+    loadRGBImages(rgbs,rgbImagePath);
+    //loadTrainingSet(rgbImagePath,trainingSet);
+    //saveBBox(trainingSet);
+    vector<boundingBox> bboxSet;
+    loadBBox(bboxSet,bboxFilename);
+    ***/
+    /*for(int i = 0; i < NO_TEST_SUBJECTS; i++){
+        string maskFilename = "/Users/Knowhow10/Desktop/head_pose_masks/0"+convertInt(i+1)+"/";
+        string headmaskFname = "headmask"+convertInt(i+1)+".txt";
+        vector<Mat> masks ;
+        loadMaskImages(masks, maskFilename);
+        cout << masks.size() << endl;
+        vector<boundingBox> headmasks;
+        findMasks(masks, headmasks);
+        saveBBox(headmasks,headmaskFname);
+        cout << "subject " << i+1 << " done" << endl;
+    }*/
+//    vector<boundingBox> headmasks;
+//    loadBBox(headmasks, NO_TEST_SUBJECTS);
+//    cout << headmasks.size() << endl;
     return 0;
 }
 
@@ -184,6 +246,7 @@ int16_t* loadDepthImageCompressed( const char* fname ){
 	//now read the depth image
 	FILE* pFile = fopen(fname, "rb");
 	if(!pFile){
+        
 		std::cerr << "could not open file " << fname << std::endl;
 		return NULL;
 	}
@@ -560,4 +623,112 @@ void getIntegralImageDepthChannel(Mat& depthI,int16_t* trainingSet,Mat* channels
     
     
 	split(img3D, channels);
+}
+
+vector<double> Error(vector<float> estimated, vector<float> gt){
+    vector<double> err;
+    double noseError = 0;
+    double angleError = 0;
+    for(int i = 0; i < 3; i++){
+        noseError = noseError + (gt[i]-estimated[i])*(gt[i]-estimated[i]);
+        angleError = angleError + (gt[i+3]-estimated[i+3])*(gt[i+3]-estimated[i+3]);
+    }
+    err.push_back(sqrt(noseError));
+    err.push_back(sqrt(angleError));
+    return err;
+}
+
+void loadRGBImages(vector<Mat>& rgb, string filepath){
+    Mat temp;
+    string subS = "";
+    string filename = "";
+    for(int i = 4; i < 500; i++){
+		if(i<10)
+			subS = "00"+convertInt(i);
+		else if (i>=10 && i < 100)
+			subS = "0"+convertInt(i);
+		else
+			subS = convertInt(i);
+        filename = filepath  + "frame_00"+subS+"_rgb.png";
+        temp = imread(filename, CV_LOAD_IMAGE_COLOR);
+        rgb.push_back(temp);
+    }
+}
+
+void loadMaskImages(vector<Mat>& rgb, string filepath){
+    Mat temp;
+    string subS = "";
+    string filename = "";
+    for(int i = 4; i < 500; i++){
+		if(i<10)
+			subS = "00"+convertInt(i);
+		else if (i>=10 && i < 100)
+			subS = "0"+convertInt(i);
+		else
+			subS = convertInt(i);
+        filename = filepath  + "frame_00"+subS+"_depth_mask.png";
+        temp = imread(filename, CV_LOAD_IMAGE_COLOR);
+        rgb.push_back(temp);
+    }
+}
+
+void saveBBox(vector<boundingBox> masks,string fname){
+    ofstream fOut;
+    fOut.open(fname);
+    for(int i = 0; i < masks.size(); i++){
+        fOut << masks[i].x << " " << masks[i].y << " " << masks[i].width << " " << masks[i].height << endl;
+    }
+    fOut.close();
+}
+
+void loadBBox(vector<boundingBox>& bboxSet, int size){
+    boundingBox temp;
+    for(int j = 0; j < size; j++){
+        string fname = "headmask"+convertInt(j+1)+".txt";
+        ifstream fInp;
+        fInp.open(fname);
+        for(int i = 0; i < DATA_SET_SIZE; i ++){
+            fInp >> temp.x >> temp.y >> temp.width >> temp.height;
+            bboxSet.push_back(temp);
+            //cout << bboxSet[i].x << " " << bboxSet[i].y << " " << bboxSet[i].width << " " << bboxSet[i].height << endl;
+        }
+        fInp.close();
+    }
+    
+}
+
+boundingBox findMask(Mat mask){
+    boundingBox bbox;
+    int min_x = 640;
+	int min_y = 480;
+	int max_x = 0;
+	int max_y = 0;
+    
+    
+	for(int y = 0; y < 480; y++)
+	{
+	    
+	    for(int x = 0; x < 640; x++){
+            
+	    	if( mask.at<int>(y,x) > 0) {
+                
+				min_x = min(min_x,x); min_y = min(min_y,y);
+				max_x = max(max_x,x); max_y = max(max_y,y);
+			}
+            
+	    }
+	}
+	bbox.x = min_x;
+	bbox.y = min_y;
+	bbox.width = max_x - min_x;
+	bbox.height = max_y - min_y;
+    return bbox;
+}
+
+void findMasks(vector<Mat> masks, vector<boundingBox>& headMasks){
+    boundingBox temp;
+    for(int i = 0; i < masks.size(); i++){
+        temp = findMask(masks[i]);
+        headMasks.push_back(temp);
+    }
 }

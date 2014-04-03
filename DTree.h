@@ -44,6 +44,7 @@ public:
         //right_child = 0;
         depth = 0;
         isleaf = 0;
+        positiveP = -1;
     }
     Node(int d){
         //cout << d << endl;
@@ -64,7 +65,7 @@ public:
     float computeEntropy(vector<vector<float>> cvM);
     float infoGain(vector<HPatch> total, vector<HPatch> l, vector<HPatch> r);
     float traceCovariance(vector<vector<float>>  cv);
-    
+    void computePositiveP();
     
     bool isleaf;
     int depth;
@@ -81,6 +82,7 @@ public:
     vector<float> meanVector;
     vector<Node> makeTreeNoRecursion(vector<HPatch> PS,vector<Mat> dImage);
     float trace;
+    float positiveP;
 };
 
 
