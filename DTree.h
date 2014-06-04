@@ -15,6 +15,9 @@
 #include "TMatrix.h"
 #include <cmath>
 #include <fstream>
+#define POSE_SIZE 6
+#define AVG_FACE_DIAMETER 236.4f
+#define AVG_FACE_DIAMETER2 55884.96f
 #endif /* defined(__fypFirstDraft__DTree__) */
 
 using namespace std;
@@ -34,6 +37,14 @@ public:
     
 };
 
+struct Vote {
+    
+	cv::Vec<float,POSE_SIZE> vote;
+	const float* trace;
+	const float* conf;
+	bool operator<(const Vote& a) const { return trace<a.trace; }
+    
+};
 
 class Node{
     
@@ -63,10 +74,17 @@ public:
     vector<vector<float>> computeCovariance(vector<HPatch> sPvector, bool angleOrNose);
     float computeDeterminant(vector<vector<float>> cvM);
     float computeEntropy(vector<vector<float>> cvM);
+    float computeClassEntropy(vector<HPatch> patches);
     float infoGain(vector<HPatch> total, vector<HPatch> l, vector<HPatch> r);
     float traceCovariance(vector<vector<float>>  cv);
     void computePositiveP();
-    
+    float classProbability(vector<HPatch> patches);
+    float OkadaEntropy(vector<HPatch> parent);
+    float classUncertainty(vector<HPatch> patches);
+    float findModulas(vector<float> f);
+    float infoGain2d(vector<HPatch> parent, vector<HPatch> left, vector<HPatch> right);
+    vector<float> computeMeanVector2d(vector<HPatch> sPvector,int lm);
+    vector<vector<float>> computeCovariance2d(vector<HPatch> sPvector, int lm);
     bool isleaf;
     int depth;
     Node *left_child, *right_child;
@@ -82,6 +100,7 @@ public:
     vector<float> meanVector;
     vector<Node> makeTreeNoRecursion(vector<HPatch> PS,vector<Mat> dImage);
     float trace;
+    vector<float> trace2d;
     float positiveP;
 };
 
@@ -103,8 +122,8 @@ public:
     
     void growTree(vector<HPatch> PS, vector<Mat> dImage);
     
-    void regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> testGt,vector<vector<float>>& estimatedMean,Mat img3D);
-    
+    void regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> testGt,vector<vector<float>>& estimatedMean,Mat img3D,vector<Vote>& votes);
+    void regressionEstimation2d(Mat test2D,boundingBox testBbox,vector<vector<float>> testGt,vector<vector<float>>& estimatedMean,vector<Vote>& votes);
     vector<sub_patch> f2;
     vector<sub_patch> f1;
     vector<float> subD;

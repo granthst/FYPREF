@@ -1,0 +1,83 @@
+\begin{thebibliography}{1}
+
+\bibitem{EGL}
+Erik G. Learned-Miller, ``{Introduction to Computer Vision},'' 2011.
+
+\bibitem{GFRF}
+Gabriele Fanelli, Matthias Dantone, Juergen Gall, Andrea Fossati, Luc Van Gool, ``{Random forests for real time 3D face analysis},'' International Journal of Computer Vision, 101(3):437-458, 2013.
+
+\bibitem{HPS}
+Erik Murphy-Chutorian, Mohan Manubhai Trivedi, ``{Head Pose Estimation in Computer Vision: A Survey},'' Pattern Analysis and Machine Intelligence, IEEE Transactions on , vol.31, no.4, pp.607,626, April 2009.
+
+\bibitem{DFMS}
+A. Criminisi, J. Shotton, E. Konukoglu, ``{Decision Forests for Classification, Regression, Density Estimation, Manifold Learning and Semi-Supervised Learning},'' 2011.
+
+\bibitem{MVDT}
+Carla E. Brodley, Paul E. Utgoff, ``{Multivariate Decision Trees},'' Journal
+Machine Learning Volume 19 Issue 1, Pages 45 - 77 April 1995 .
+
+\bibitem{DRFHP}
+Gabriele Fanelli, Luc Van Gool, Juergen Gall , ``{Real Time Head Pose Estimation with Random Regression Forests},'' Proceeding
+CVPR '11 Proceedings of the 2011 IEEE Conference on Computer Vision and Pattern Recognition
+Pages 617-624 ,2011.
+
+\bibitem{RFML}
+Leo Breiman ``{Random forests. Machine Learning},'' Journal Machine Learning
+Volume 45, Issue 1 , pp 5-32, 2001.
+
+\bibitem{RSMDF}
+Tin Kam Ho ``{The Random Subspace Method for Construction Decision Forests},''Pattern Analysis and Machine Intelligence, IEEE Transactions on , vol.20, no.8, pp.832,844, Aug 1998.
+
+\bibitem{2dGFRF}
+Matthias Dantone, Juergen Gall, Gabriele Fanelli, Luc Van Gool ``{Real-time Facial Feature Detection using Conditional Regression Forests
+},'' Computer Vision and Pattern Recognition (CVPR), 2012 IEEE Conference on , pp. 2578,2585, 16-21 June 2012.
+
+\bibitem{2I3DF}
+Sotiris Malassiotis, Michael G. Strintzis ``{Pose and illumination compensation for 3D face recognition},'' Image Processing, 2004. ICIP '04. 2004 International Conference on , vol.1, pp.91,94, 24-27 Oct.2004.
+
+\bibitem{3DS}
+Angela Caunce, David Cristinacce, Chris Taylor, Tim Cootes ``{Locating Facial Features and Pose Estimation Using a 3D Shape Model},'' ISVC (1) 2009: 750-761
+
+\bibitem{ageEstimation}
+Guodong Guo, Yun Fu, Thomas S. Huang, Charles R. Dyer ``{Locally Adjusted Robust Regression for Human Age Estimation},''Applications of Computer Vision, 2008. WACV 2008. IEEE Workshop on , pp.1,6, 7-9 Jan. 2008
+
+\bibitem{headposeCR}
+Guodong Guo, Yun Fu, Thomas S. Huang, Charles R. Dyer ``{Head Pose Estimation: Classification or Regression?},''  Pattern Recognition,ICPR 2008. 19th International Conference on , pp.1,4, 8-11 Dec. 2008
+
+\bibitem{DTBBR}
+Thomas G. Dietterich ``{An Experimental Comparison of Three Methods for Constructing Ensembles of Decision Trees: Bagging, Boosting, and Randomization},''Journal Machine Learning,Vol 40 Issue 2, Pages 139 - 157 ,Aug 2000
+
+
+\bibitem{IIDT}
+Paul E. Utgoff ``{Incremental Induction of Decision Trees},'' 
+Machine Learning, Volume 4, Issue 2, pp 161-186, Nov 1989
+
+\bibitem{robustFacial}
+Feng Zhou, Jonathan Brandt, Zhe Lin``{Exemplar-based Graph Matching
+for Robust Facial Landmark Localization},'' IEEE International Conference on Computer Vision (ICCV), 2013
+
+\bibitem{3Dlandmark}
+Clement Creusot, Nick Pears, Jim Austin``{3D Face Landmark Labelling},''Proceeding 3DOR '10 Proceedings of the ACM workshop on 3D object retrieval, Pages 27-32, 2010
+
+\bibitem{headPE}
+Stylianos Asteriadis, Kostas Karpouzis, Stefanos Kollias``{Head Pose Estimation with One Camera, in Uncalibrated Environments},'' Proceeding EGIHMI '10 Proceedings of the 2010 workshop on Eye gaze in intelligent human machine interaction, Pages 55-62, 2010
+
+\bibitem{FaceRecog}
+Roberto Brunelli, Tomaso Poggio``{Face Recognition: Features versus Templates},'' Journal
+IEEE Transactions on Pattern Analysis and Machine Intelligence, vol 15 Issue 10, Page 1042-1052, Oct 1993
+
+\bibitem{xiaowei}
+Xiaowei Zhao, Shiguang Shan, Xiujuan Chai, Xilin Chen``{Cascaded Shape Space Pruning for Robust Facial Landmark Detection},''  nternational Conference on Computer Vision (ICCV2013), Sydney, Australia, December 1-8,2013
+
+\bibitem{gray}
+Tarun Kumar, Karun Verma``{A Theory Based on Conversion of RGB image to Gray image},''International Journal of Computer Applications (0975 – 8887) Volume 7- No.2 Sep 2010
+
+\bibitem{integralimage}
+Simone Frintrop,Maria Klodt,Erich Rome ``{A Real-time Visual Attention System Using
+Integral Images},'' 2007
+
+\bibitem{facedetect}
+Viola, P. and Jones, M. J. Robust Real-Time Face Detection. International Journal of Computer Vision (IJCV) 57 (2, 2004) 137–154.
+
+\end{thebibliography}
+

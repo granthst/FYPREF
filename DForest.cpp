@@ -7,7 +7,7 @@
 //
 
 #include "DForest.h"
-#define SIZE 100
+#define SIZE 1000
 
 string convertIntToString(int number)
 {
@@ -29,16 +29,17 @@ void DForest::growForest(vector<HPatch> wholeDataSet, vector<Mat> depthIntegral)
 void DForest::writeForest(){
     string treeFilename = "";
     for(int i = 0; i < noTrees; i++){
-        treeFilename = "treeNew"+ convertIntToString(i) + ".txt";
+        treeFilename = "2dTreesnew"+ convertIntToString(i) + ".txt";
         trees[i].write_tree(treeFilename);
     }
 }
 
 void DForest::loadTree(){
+    cout << " inside load tree " << endl;
     string treeFilename = "";
     for(int i = 0; i < noTrees; i++){
         DTree tree(10);
-        treeFilename = "treeNew"+ convertIntToString(i) + ".txt";
+        treeFilename = "2dTreesnew"+ convertIntToString(i) + ".txt";
         tree.read_tree(treeFilename);
         trees.push_back(tree);
         cout << "tree" << i << " load" << endl;
@@ -46,11 +47,23 @@ void DForest::loadTree(){
 }
 
 void DForest::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> testGt,Mat img3D){
+    
     for(int i = 0; i < noTrees; i++){
-        trees[i].regressionEstimation(test3D, testBbox, testGt, estimatedMean, img3D);
+        trees[i].regressionEstimation(test3D, testBbox, testGt, estimatedMean, img3D,votes);
         //cout << "size mean after tree" << i+1 << " " << estimatedMean.size() << endl;
     }
+    //cout << "votes : " << votes.size() << endl;
+    //this->meanShift(1.f, 6.f, 5, 400);
+}
+
+void DForest::regressionEstimation2d(Mat test2D,boundingBox testBbox,vector<vector<float>> testGt){
     
+    for(int i = 0; i < noTrees; i++){
+        trees[i].regressionEstimation2d(test2D, testBbox, testGt, estimatedMean,votes);
+        //cout << "size mean after tree" << i+1 << " " << estimatedMean.size() << endl;
+    }
+    //cout << "votes : " << votes.size() << endl;
+    //this->meanShift(1.f, 6.f, 5, 400);
 }
 
 vector<HPatch> DForest::generateSubSet(vector<HPatch> wholeDataSet, int size){

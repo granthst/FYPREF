@@ -67,10 +67,12 @@ public:
     float getSubPatchDistance();
     float findEuclideanDistance(vector<float> gt);
     void loadGroundTruth(vector<float> groundT);
+    void setTestPatch(boundingBox bbox, int stepsizeX,int stepsizeY);
     vector<sub_patch> rectangles;
     vector<float> groundT;
+    vector<vector<float>> groundT2d;
     //int groundTruthIndex;
-
+    
     int index;
     int p_width, p_height, p_x, p_y;
     //vector<sub_patch> f;
@@ -87,6 +89,9 @@ public:
     PatchSet(int n){size = n;}
     ~PatchSet(){}
     void getRandomPatches(boundingBox bbox , Mat dImage, vector<float> groundT ,bool p);
+    void getRandomPatches2d(boundingBox bbox , Mat dImage, vector<vector<float>> groundT2d ,bool p);
+    void sampleTestPatches(boundingBox bbox,Mat dImage);
+    void sampleTestPatches2d(boundingBox bbox,Mat dImage);
     void storeGroundTruth(vector<float> groundT);
     vector<HPatch> pSet;
     vector<float> groundT;

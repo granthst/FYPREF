@@ -1,0 +1,275 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Masters/Doctoral Thesis 
+% LaTeX Template
+% Version 1.42 (19/1/14)
+%
+% This template has been downloaded from:
+% http://www.latextemplates.com
+%
+% Original authors:
+% Steven Gunn 
+% http://users.ecs.soton.ac.uk/srg/softwaretools/document/templates/
+% and
+% Sunil Patel
+% http://www.sunilpatel.co.uk/thesis-template/
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+% Note:
+% Make sure to edit document variables in the Thesis.cls file
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[11pt, a4paper, oneside]{Thesis} % Paper size, default font size and one-sided paper
+
+\graphicspath{{images/}} % Specifies the directory where pictures are stored
+
+\hypersetup{urlcolor=black, colorlinks=true} % Colors hyperlinks in blue - change to black if annoying
+\title{\ttitle} % Defines the thesis title - don't touch this
+
+\begin{document}
+
+\frontmatter % Use roman page numbering style (i, ii, iii, iv...) for the pre-content pages
+
+\setstretch{1.3} % Line spacing of 1.3
+
+\pagestyle{plain}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}} % New command to make the lines in the title page
+
+% Subreferences Setup
+\captionsetup{subrefformat=parens}
+
+% PDF meta-data
+\hypersetup{pdftitle={\ttitle}}
+\hypersetup{pdfsubject=\subjectname}
+\hypersetup{pdfauthor=\authornames}
+\hypersetup{pdfkeywords=\keywordnames}
+
+%----------------------------------------------------------------------------------------
+%	DEFINITIONS OF NEW COMMANDS
+%----------------------------------------------------------------------------------------
+
+% vector variable command
+\newcommand*\vecvar[1]{\mathbfit#1}
+
+% matrix variable command
+\newcommand*\matvar[1]{\mathbf#1}
+
+% transpose command
+\newcommand*\transpose[1]{#1^{T}}
+
+% trace command
+\newcommand*\trace[1]{Tr(#1)}
+
+% Bernoulli distribution command
+\newcommand*\bernoulli[1]{Be(#1)}
+
+% i.i.d. command
+\newcommand*\iid{i.i.d.\xspace}
+
+% probability event command
+\newcommand*\probability[1]{\Pr(#1)}
+
+% expectation command
+\newcommand*\expectation[1]{\mathbb{E}(#1)}
+
+% variance command
+\newcommand*\variance[1]{Var(#1)}
+
+% covariance command
+\newcommand*\covariance[2]{Cov(#1#2)}
+
+% graph variable command
+\newcommand*\graphvar[1]{\mathcal#1}
+
+% set variable command
+\newcommand*\setvar[1]{\mathcal#1}
+
+% cardinality set command
+\newcommand*\cardinality[1]{\left\vert#1\right\vert}
+
+% mean command
+\newcommand*\mean[1]{\langle#1\rangle}
+
+% absolute value command
+\newcommand*\abs[1]{\left\vert#1\right\vert}
+
+% emphasise in text command
+\newcommand*\emphT[1]{\textit{#1}}
+
+% natural logarithm command
+\newcommand*\natlog[1]{\log#1}
+
+% euler constant (e) command
+\newcommand{\euler}{e\xspace}
+
+% set of real numbers 'R' command
+\newcommand*\realsR{\mathbb{R}\xspace}
+
+% special number one (1) command
+\newcommand*\one{\mathds{1}\xspace}
+
+%optimizaiton 
+\newcommand*{\argmax}{\operatornamewithlimits{argmax}\limits}
+
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\begin{titlepage}
+\begin{center}
+
+\includegraphics[scale=0.1]{imperialCrest} % University/department logo - uncomment to place it 
+
+\textsc{\LARGE \univname}\\[1cm] % University name
+\textsc{\Large Final Year Project Report}\\[0.5cm] % Thesis type
+
+\HRule \\[0.4cm] % Horizontal line
+{\huge \bfseries \ttitle}\\[0.1cm] % Thesis title
+\HRule \\[1.5cm] % Horizontal line
+ 
+\begin{minipage}{0.4\textwidth}
+\begin{flushleft} \large
+\emph{Author:}\\
+{\authornames} % Author name - remove the \href bracket to remove the link
+\end{flushleft}
+\end{minipage}
+\begin{minipage}{0.4\textwidth}
+\begin{flushright} \large
+\emph{Supervisor:} \\
+{\supname} \\% Supervisor name - remove the \href bracket to remove the link
+\emph{Second marker:} \\
+{\secmark}
+\end{flushright}
+\end{minipage}\\[2cm]
+ 
+\large This report is submitted in fulfilment of the requirements\\ for the degree of \textit{\degreename}\\ % University requirement text
+in the\\
+\deptname\\\univname\\[1.5cm] % Research group name and department name
+
+{\large \today}\\[0.1cm] % Date
+
+\vfill
+\end{center}
+
+\end{titlepage}
+
+% blank page
+\thispagestyle{empty}
+\mbox{}
+\newpage
+
+%----------------------------------------------------------------------------------------
+%	ABSTRACT PAGE
+%----------------------------------------------------------------------------------------
+
+\addtotoc{Abstract} % Add the "Abstract" page entry to the Contents
+
+\abstract{Write Abstract here...}
+
+\clearpage % Start a new page
+
+%----------------------------------------------------------------------------------------
+%	ACKNOWLEDGEMENTS
+%----------------------------------------------------------------------------------------
+
+\setstretch{1.3} % Reset the line-spacing to 1.3 for body text (if it has changed)
+
+\acknowledgements{Write Acknowledgements here...}
+
+\clearpage % Start a new page
+
+%----------------------------------------------------------------------------------------
+%	LIST OF CONTENTS/FIGURES/TABLES PAGES
+%----------------------------------------------------------------------------------------
+
+\tableofcontents
+
+\listoffigures
+
+\listoftables
+
+
+%----------------------------------------------------------------------------------------
+%	NOTATIONS
+%----------------------------------------------------------------------------------------
+
+\clearpage % Start a new page
+
+\setstretch{1.3} % Reset the line-spacing to 1.3 for body text (if it has changed)
+
+\listofnomenclature{ll}
+{
+$\cardinality{\setvar{S}}$ & Cardinality of the set $\setvar{S}$ \\
+$\one_{\setvar{S}}$ & Indicator variable over the set $\setvar{S}$ \\
+$y$ & Scalar $y$ \\
+$\abs{y}$ & Absolute value of $y$ \\
+$\vecvar{v}$ & Vector $\vecvar{v}$ \\
+$\matvar{M}$ & Matrix $\matvar{M}$ \\
+$M_{ij}$ & The element of the matrix $\matvar{M}$ at row $i$ and column $j$\\
+$\transpose{\matvar{M}}$ & Transpose of the matrix $\matvar{M}$ \\
+$\abs{\matvar{M}}$ & Determinant of the matrix $\matvar{M}$ \\
+$\trace{\matvar{M}}$ & Trace of the matrix $\matvar{M}$ \\
+$\expectation{X}$ & Expected value of $X$ \\
+$\variance{X}$ & Variance of $X$ \\
+$\natlog(x)$ & \emphT{natural logarithm} of $x$ (logarithm to the base $\euler$)
+}
+
+%----------------------------------------------------------------------------------------
+%	THESIS CONTENT - CHAPTERS
+%----------------------------------------------------------------------------------------
+
+
+
+\mainmatter % Begin numeric (1,2,3...) page numbering
+
+\nocite{*}
+
+% Introduction
+\input{chapters/chapter1}
+
+% Background
+\input{chapters/chapter2}
+
+%Head Pose
+\input{chapters/chapter3}
+
+%Face feature
+\input{chapters/chapter4}
+
+%Conclusion
+\input{chapters/chapter5}
+
+%----------------------------------------------------------------------------------------
+%	THESIS CONTENT - APPENDICES
+%----------------------------------------------------------------------------------------
+
+\appendix % Cue to tell LaTeX that the following 'chapters' are Appendices
+
+% List of FTSE 100 Stocks considered
+%\input{appendices/appendixA}
+
+\backmatter
+
+%----------------------------------------------------------------------------------------
+%	BIBLIOGRAPHY
+%----------------------------------------------------------------------------------------
+
+\newpage
+\thispagestyle{plain}
+\mbox{}
+\label{Bibliography}
+
+\bibliographystyle{hieeetr}
+\bibliography{}
+%%% Add bibliography here
+%\bibliographystyle{hieeetr.bst}
+%\bibliography{finalbib}
+
+\end{document}  

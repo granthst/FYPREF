@@ -9,11 +9,14 @@
 #include "DTree.h"
 #define n_F 50
 #define n_T 10
-#define THESHOLD_MAX 1000
+#define THESHOLD_MAX 200
 #define DEPTH_TREE 15
 #define TRACE_MAX 400
-#define SAMPLE_PATCHES 10000
-#define P_TH 0.5
+#define SAMPLE_PATCHES 1000
+#define P_TH 1
+#define T_P 0.7
+#define TD_LAMBDA 0.125
+
 string integralImageFilename = "integral3.txt";
 string treeFilename = "tree.txt";
 //read tree file
@@ -36,10 +39,16 @@ void Node::generateRandomSubPatches(const vector<HPatch>& PS){
         for(int i = 0; i < 2; i++){
             temp.x = rand() % 80;
             temp.y = rand() % 80;
-            temp.w = 1 + rand() % (80 - temp.x);
-            temp.h = 1 + rand() % (80 - temp.y);
+            if(temp.x <= 40)
+                temp.w = 1 + rand()% 40;
+            else
+                temp.w = 1 + rand() % (80 - temp.x);
+            if(temp.y <= 40)
+                temp.h = 1 + rand() % 40;
+            else
+                temp.h = 1 + rand() % (80 - temp.y);
             tempSub.push_back(temp);
-            //cout << tempSub[i].x << endl;
+           // cout << tempSub[i].x << endl;
         }
         rectangles.push_back(tempSub);
         //cout << " rec " << rectangles[j][0].x << endl;
@@ -68,7 +77,7 @@ void Node::setPatchSetBeforeSplit( vector<HPatch> PS){
 void Node::findBestT(vector<HPatch> PS, vector<Mat> itegralImage){
     
     //cout << PS.size() << endl;
-    float infoGainTemp = numeric_limits<int>::min();
+    float infoGainTemp = 0;//numeric_limits<int>::min();
     //cout << "int min " << infoGainTemp << endl;
     vector<HPatch> tempLeft, tempRight;
     int x1,y1,w1,h1,x2,y2,w2,h2;
@@ -90,36 +99,17 @@ void Node::findBestT(vector<HPatch> PS, vector<Mat> itegralImage){
     for(int k = 0; k < rT.size(); k++ ){
         
         tempRT = rT[k];
+        //cout << "threshold " << tempRT << endl;
         for(int j = 0; j < rectangles.size(); j++){
-            
-            //cout << "threshold : " << k << " : " << rT[k] << " for test " << j << endl;
-            
             for( int i = 0; i < PS.size(); i++){
-                //cout << " f1 x " << rectangles[j][0].x << endl << endl;
-                //int rf = rand() % 399;
-                //int rt = rand() % 399;
+                //cout << itegralImage[PS[i].index].at<int>(rectangles[j][0].x+rectangles[j][0].w,rectangles[j][0].y+rectangles[j][0].h) << endl;
                 PS[i].chooseSubPatches(rectangles[j],itegralImage[PS[i].index]);
                 x1 = rectangles[j][0].x; x2 = rectangles[j][1].x;
                 y1 = rectangles[j][0].y; y2 = rectangles[j][1].y;
                 w1 = rectangles[j][0].w; w2 = rectangles[j][1].w;
                 h1 = rectangles[j][0].h; h2 = rectangles[j][1].h;
-                
-                /*if(w1 == 0)
-                    w1 = 1;
-                if(h1 == 0)
-                    h1 = 1;
-                if(h2 == 0)
-                    h2 = 1;
-                if(w2 == 0)
-                    w2 = 1;*/
-                /*x1 = f1[j*n_P+PS[i].index].x ; y1 = f1[j*n_P+PS[i].index].y ; w1 = f1[j*n_P+PS[i].index].w; h1 = f1[j*n_P+PS[i].index].h;
-                x2 = f2[j*n_P+PS[i].index].x; y2 = f2[j*n_P+PS[i].index].y; w2 = f2[j*n_P+PS[i].index].w; h2 = f2[j*n_P+PS[i].index].h;
-                tempSB = subD[j*n_P+PS[i].index];*/
-                
-                //cout << PS[i].index << endl;
                 tempSB = PS[i].subPDistance;
-                //cout << "tempSB : " << tempSB << endl;
-                //cout << "tempRT : " << tempRT << endl;
+                //cout << "sb difference " << tempSB << endl;
                 if(tempSB > tempRT)
                     tempLeft.push_back(PS[i]);
                 else
@@ -131,15 +121,15 @@ void Node::findBestT(vector<HPatch> PS, vector<Mat> itegralImage){
             //leftSplit = tempLeft;
             //rightSplit = tempRight;
            //cout << j << " left child patch size : " << tempLeft.size() << " right child patch size : " << tempRight.size() << endl;
-            //cout << "info gain " << infoGain(beforeSplit, tempLeft, tempRight) << endl;
+            //cout << "info gain " << infoGain2d(beforeSplit, tempLeft, tempRight) << endl;
             
            //cout << "rt " << tempRT << endl;
             //cout << " tempsb " << tempSB << endl;
 
-                if (infoGainTemp < infoGain(beforeSplit, tempLeft, tempRight)){
+                if (infoGainTemp < infoGain2d(beforeSplit, tempLeft, tempRight)){
                     leftSplit = tempLeft;
                     rightSplit = tempRight;
-                    infoGainTemp = infoGain(beforeSplit, tempLeft, tempRight);
+                    infoGainTemp = infoGain2d(beforeSplit, tempLeft, tempRight);
                     tempS1.x = x1;   tempS1.y = y1;
                     tempS1.w = w1;   tempS1.h = h1;
                     tempS2.x = x2;   tempS2.y = y2;
@@ -234,6 +224,19 @@ vector<float> Node::computeMeanVector(vector<HPatch> sPvector){
     return mean;
 }
 
+vector<float> Node::computeMeanVector2d(vector<HPatch> sPvector, int lm){
+    vector<float> mean;
+    for(int i = 0; i < 2; i++){
+        float temp = 0.0;
+        for(int j = 0; j < sPvector.size(); j++){
+            temp = sPvector[j].groundT2d[lm][i] + temp;
+        }
+        temp = temp/sPvector.size();
+        mean.push_back(temp);
+    }
+    return mean;
+}
+
 vector<vector<float>> Node::computeCovariance(vector<HPatch> sPvector, bool angleOrNose){
     vector<vector<float>> Covariance;
     vector<float> meanVector = computeMeanVector(sPvector);
@@ -247,22 +250,53 @@ vector<vector<float>> Node::computeCovariance(vector<HPatch> sPvector, bool angl
             for(int k = 0; k < sPvector.size(); k++){
                 temp = temp + (sPvector[k].groundT[offset+i] - meanVector[offset+i]) *(sPvector[k].groundT[offset+j] - meanVector[offset+j]);
             }
-            float cov = temp / sPvector.size();
+            float cov;
+            if(sPvector.size() != 0)
+                cov = temp / sPvector.size();
+            else
+                cov = 0;
             col.push_back(cov);
         }
         Covariance.push_back(col);
     }
-
+    //cout << "size " << sPvector.size() << endl;
     return  Covariance;
+
     //cv = Covariance;
 }
 
+vector<vector<float>> Node::computeCovariance2d(vector<HPatch> sPvector, int lm){
+    vector<vector<float>> Covariance;
+    vector<float> meanVector = computeMeanVector2d(sPvector,lm);
+    for(int i = 0; i < 2; i++){
+        vector<float> col;
+        for(int j = 0; j < 2; j++){
+            float temp = 0.0;
+            for(int k = 0; k < sPvector.size(); k++){
+               temp = temp + (sPvector[k].groundT2d[lm][i] - meanVector[i]) *(sPvector[k].groundT2d[lm][j] - meanVector[j]);
+            }
+            float cov;
+            if(sPvector.size() != 0)
+                cov = temp / sPvector.size();
+            else
+                cov = 0;
+            col.push_back(cov);
+        }
+        Covariance.push_back(col);
+    }
+    return Covariance;
+}
+
+
 float Node::computeDeterminant(vector<vector<float>> cvM){
     TMatrix tM;
+    //bool allzero = 1;
     for(int i = 0; i < 3; i++){
         for(int j = 0; j < 3; j++){
             tM.m[j*3+i] = cvM[i][j];
+            //cout << cvM[i][j] << " ";
         }
+        //cout << endl;
     }
     //cout << "covarianceM det " << tM.determinant() << endl;
     return tM.determinant();
@@ -279,24 +313,39 @@ float Node::computeEntropy(vector<vector<float>> cvM){
         return 0;
 }
 
+float Node::computeClassEntropy(vector<HPatch> patches){
+    float p1,p2;
+    p1 = classProbability(patches);
+    p2 = 1 - p1;
+    if(p1 == 0)
+        return - p2*log2(p2);
+    else if(p2 == 0)
+        return - p1*log2(p1);
+    else
+        return - (p1*log2(p1)+p2*log2(p2));
+    
+}
 //compute infomation gain
 float Node::infoGain(vector<HPatch> parent, vector<HPatch> left, vector<HPatch> right){
-    vector<vector<float>> p1 = computeCovariance(parent,1);
-    vector<vector<float>> l1 = computeCovariance(left,1);
-    vector<vector<float>> r1 = computeCovariance(right,1);
-    vector<vector<float>> p2 = computeCovariance(parent,0);
-    vector<vector<float>> l2 = computeCovariance(left,0);
-    vector<vector<float>> r2 = computeCovariance(right,0);
+
     float IG = 0 ;
-    IG = (computeEntropy(p1) + computeEntropy(p2)) - float(left.size())/parent.size()*(computeEntropy(l1)+computeEntropy(l2)) - float(right.size())/parent.size()*(computeEntropy(r1)+computeEntropy(r2));
+    IG = OkadaEntropy(parent) - float(left.size())/parent.size()*OkadaEntropy(left) - float(right.size())/parent.size()*OkadaEntropy(right);
     //cout << IG << endl;
     return IG;
+}
+
+float Node::OkadaEntropy(vector<HPatch> patches){
+    vector<vector<float>> p1 = computeCovariance(patches,1);
+    vector<vector<float>> p2 = computeCovariance(patches,0);
+    //cout << "regression " << computeEntropy(p1)+computeEntropy(p2) << endl;
+    //cout << "classification " << computeClassEntropy(patches) << endl;
+    return computeEntropy(p1)+computeEntropy(p2)+max(classProbability(patches)-T_P,0.0)*computeClassEntropy(patches);
 }
 
 
 float traceCovariance(vector<vector<float>> cv){
     float t = 0;
-    for(int i = 0; i < 3; i++){
+    for(int i = 0; i < cv.size(); i++){
         t = t + cv[i][i];
         //cout << "cv i i " << cv[i][i] << endl;
     }
@@ -313,6 +362,42 @@ void Node::computePositiveP(){
     
 }
 
+float Node::classProbability(vector<HPatch> patches){
+    float count = 0;
+    for(int i = 0; i < patches.size(); i++ ){
+        if(patches[i].positive == 0)
+            count++;
+    }
+    if(patches.size() == 0)
+        return 0.0;
+    return count/patches.size();
+}
+
+float Node::classUncertainty(vector<HPatch> patches){
+    float entropy2d = 0;
+    for(int i = 0; i < 17; i ++){
+        float sum = 0;
+        for(int j =0; j < patches.size(); j++){
+            float c = exp(-1/TD_LAMBDA * findModulas(patches[j].groundT2d[i]));
+            sum = sum + c;
+        }
+        entropy2d = entropy2d + sum/patches.size()*log2(sum/patches.size());
+    }
+    return -entropy2d;
+}
+
+float Node::infoGain2d(vector<HPatch> parent, vector<HPatch> left, vector<HPatch> right){
+    float IG = 0;
+    IG = classUncertainty(parent) - float(left.size())/parent.size()*classUncertainty(left) - float(right.size())/parent.size()*classUncertainty(right);
+    return IG;
+}
+float Node::findModulas(vector<float> f){
+    float x = 0;
+    for(int i = 0; i < f.size(); i++ ){
+        x= x + f[i]*f[i];
+    }
+    return sqrt(x);
+}
 //load tree
 void DTree::read_tree(const string& fname){
     ifstream fInp;
@@ -355,14 +440,27 @@ void DTree::read_tree(const string& fname){
             tempBestF.clear();
         }
         else{
-            for(int i = 0; i < 6; i++){
+//            for(int i = 0; i < 6; i++){
+//                fInp >> tempData;
+//                tempMean.push_back(tempData);
+//            }
+//            fInp >> tempTrace >> tempP;
+//            tempNode.meanVector = tempMean;
+//            tempNode.trace = tempTrace;
+//            tempNode.positiveP = tempP;
+//            tempMean.clear();
+            for(int i = 0; i < 17; i++){
                 fInp >> tempData;
                 tempMean.push_back(tempData);
+                fInp >> tempData;
+                tempMean.push_back(tempData);
+                fInp >> tempTrace;
+                tempNode.trace2d.push_back(tempTrace);
+                
             }
-            fInp >> tempTrace >> tempP;
-            tempNode.meanVector = tempMean;
-            tempNode.trace = tempTrace;
+            fInp >> tempP;
             tempNode.positiveP = tempP;
+            tempNode.meanVector = tempMean;
             tempMean.clear();
         }
         tempNode.depth = tempDepth; tempNode.isleaf = tempIsLeaf;
@@ -391,9 +489,13 @@ void DTree::write_tree(const string& fname){
             }
             fOut<< treeTable[j].best_T << endl;
         }else {
-            vector<float> mean = treeTable[j].computeMeanVector(treeTable[j].beforeSplit);
-            vector<vector<float>> cv = treeTable[j].computeCovariance(treeTable[j].beforeSplit,1);
-            fOut<< mean[0] << " " << mean[1] << " " << mean[2] << " " << mean[3] << " " << mean[4] << " " << mean[5] << " " << traceCovariance(cv) << " " << treeTable[j].positiveP <<  endl;
+            for(int num = 0; num < 17; num++){
+                vector<float> mean = treeTable[j].computeMeanVector2d(treeTable[j].beforeSplit,num);
+                vector<vector<float>> cv = treeTable[j].computeCovariance2d(treeTable[j].beforeSplit,num);
+                fOut<< mean[0] << " " << mean[1] <<" " << traceCovariance(cv) << " " ;
+            }
+            fOut << treeTable[j].positiveP << endl;
+            //cout<< mean[0] << " " << mean[1] << " " << mean[2] << " " << mean[3] << " " << mean[4] << " " << mean[5] << " " << traceCovariance(cv) << " " << treeTable[j].positiveP <<  endl;
         }
     }
     fOut.close();
@@ -407,9 +509,10 @@ void DTree::growTree(vector<HPatch> PS, vector<Mat> dImage){
 }
 
 
-void DTree::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> testGt,vector<vector<float>>& estimatedMean,Mat img3D){
+void DTree::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> testGt,vector<vector<float>>& estimatedMean,Mat img3D,vector<Vote>& votes){
     PatchSet testPS(SAMPLE_PATCHES);
-    testPS.getRandomPatches(testBbox, img3D, testGt,0);
+    testPS.sampleTestPatches(testBbox, img3D);
+    //testPS.getRandomPatches(testBbox, img3D, testGt, 1);
     //cout << testPS.pSet.size() << endl;
     vector<int> accumlativeNodesAtEachLevel;
     int accumlativeSum = 0;
@@ -469,21 +572,30 @@ void DTree::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> t
                     }
                     //cout << "at level: " << j << ", subPatch Distance = " << testPS.pSet[i].subPDistance << ", threshold = " << treeTable[nodePositionInTreeTable].best_T << ", chosenNode = " << chosenNode << " (" << direction << ")" << endl;
                     if (outputMeanVector) {
-                        //cout << "stopped node position in tree table = " << nodePositionInTreeTable << ", mean vector = ";
-                        for(int a = 0; a < treeTable[nodePositionInTreeTable].meanVector.size(); a++)
+                        //cout << "stopped node position in tree table = " << nodePositionInTreeTable << endl;
+                        //for(int a = 0; a < treeTable[nodePositionInTreeTable].meanVector.size(); a++)
                             //cout << treeTable[nodePositionInTreeTable].meanVector[a] << " ";
                         //cout << endl;
                         //cout << testPS.pSet[i].pC.p.d <<endl;
                         //if(treeTable[nodePositionInTreeTable].trace < 400 ){
                         
                         if(testPS.pSet[i].pC.p.d != 0 && treeTable[nodePositionInTreeTable].trace < TRACE_MAX && testPS.pSet[i].subPDistance != 0 && treeTable[nodePositionInTreeTable].positiveP >= P_TH ){
-                            
+                            Vote v;
                             //cout << "trace " << treeTable[nodePositionInTreeTable].trace << endl;
                             tempMean = treeTable[nodePositionInTreeTable].meanVector;
-                            //cout << testPS.pSet[i].pC.p.x << endl;
+                            //cout << testPS.pSet[i].pC.p.x<< endl;
                             tempMean[0] = tempMean[0] + testPS.pSet[i].pC.p.x;
                             tempMean[1] = tempMean[1] + testPS.pSet[i].pC.p.y;
                             tempMean[2] = tempMean[2] + testPS.pSet[i].pC.p.d;
+                            v.vote[0] = tempMean[0];
+                            v.vote[1] = tempMean[1];
+                            v.vote[2] = tempMean[2];
+                            v.vote[3] = tempMean[3];
+                            v.vote[4] = tempMean[4];
+                            v.vote[5] = tempMean[5];
+                            //v.trace
+                            //cout << "vote used: " << tempMean[0] << " " << tempMean[1] << " " << tempMean[2] << endl;
+                            votes.push_back(v);
                             estimatedMean.push_back(tempMean);
                         }
                     }
@@ -491,4 +603,102 @@ void DTree::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> t
             }
         }
     }
+    
+}
+
+void DTree::regressionEstimation2d(Mat test2d,boundingBox testBbox,vector<vector<float>> testGt,vector<vector<float>>& estimatedMean,vector<Vote>& votes){
+    PatchSet testPS(SAMPLE_PATCHES);
+    testPS.sampleTestPatches2d(testBbox, test2d);
+    //testPS.getRandomPatches(testBbox, img3D, testGt, 1);
+    //cout << testPS.pSet.size() << endl;
+    vector<int> accumlativeNodesAtEachLevel;
+    int accumlativeSum = 0;
+    for(int i = 0;  i < nodesAtEachLevel.size(); i++) {
+        
+        
+        accumlativeNodesAtEachLevel.push_back(accumlativeSum);
+        accumlativeSum += nodesAtEachLevel[i];
+        //cout << " nodesAtEachLevel " << nodesAtEachLevel[i] << endl;
+        //cout << " accumlativeNodesAtEachLevel " << accumlativeNodesAtEachLevel[i] << endl;
+    }
+    
+    for(int i = 0; i < testPS.pSet.size(); i++){
+        int chosenNode = 0;
+        vector<float> tempMean;
+        //cout << endl << "considering patch " << i << "..." << endl;
+        for(int j = 0; j < nodesAtEachLevel.size(); j++){
+            //cout << " j " << j << endl;
+            //bool chosen = 0;
+            int noLeafNodes = 0;
+            int noNonLeafNodes = 0;
+            //cout << nodesAtEachLevel[j] << endl;
+            for(int k = 0; k < nodesAtEachLevel[j]; k++){
+                bool outputMeanVector = false;
+                //cout << " k " << k << endl;
+                int nodePositionInTreeTable = accumlativeNodesAtEachLevel[j] + k;
+                if (treeTable[nodePositionInTreeTable].isleaf) {
+                    noLeafNodes++;
+                }
+                else {
+                    noNonLeafNodes++;
+                }
+                //cout << " noLeafNodes " << noLeafNodes << endl;
+                //cout << " noNonLeafNodes " << noNonLeafNodes <<  endl;
+                if (k == chosenNode) {
+                    string direction = "";
+                    if (treeTable[nodePositionInTreeTable].isleaf) {
+                        outputMeanVector = true;
+                        chosenNode = -1;
+                        direction = "STOP";
+                    }
+                    else {
+                        testPS.pSet[i].chooseSubPatches(treeTable[nodePositionInTreeTable].bestF,test2d);
+                        //testPS.pSet[i].setSubPatchDistance(test3D);
+                        if (testPS.pSet[i].subPDistance > treeTable[nodePositionInTreeTable].best_T) {
+                            chosenNode = 2*(noNonLeafNodes-1);
+                            direction = "LEFT";
+                            //chosen = 1;
+                            k = nodesAtEachLevel[j];
+                        }
+                        else {
+                            chosenNode = 2*noNonLeafNodes - 1;
+                            direction = "RIGHT";
+                            //chosen = 1;
+                            k = nodesAtEachLevel[j];
+                        }
+                    }
+                    //cout << "at level: " << j << ", subPatch Distance = " << testPS.pSet[i].subPDistance << ", threshold = " << treeTable[nodePositionInTreeTable].best_T << ", chosenNode = " << chosenNode << " (" << direction << ")" << endl;
+                    if (outputMeanVector) {
+                        //cout << "stopped node position in tree table = " << nodePositionInTreeTable << endl;
+                        //for(int a = 0; a < treeTable[nodePositionInTreeTable].meanVector.size(); a++)
+                        //cout << treeTable[nodePositionInTreeTable].meanVector[a] << " ";
+                        //cout << endl;
+                        //cout << testPS.pSet[i].pC.p.d <<endl;
+                        //if(treeTable[nodePositionInTreeTable].trace < 400 ){
+                        
+                        if(treeTable[nodePositionInTreeTable].positiveP >= P_TH ){
+                            //Vote v;
+                            //cout << "trace " << treeTable[nodePositionInTreeTable].trace << endl;
+                            tempMean = treeTable[nodePositionInTreeTable].meanVector;
+                            //cout << testPS.pSet[i].pC.p.x<< endl;
+                            for(int lm = 0; lm < tempMean.size(); lm = lm +2){
+//                                cout << tempMean[lm] << endl;
+//                                cout << tempMean[lm+1] << endl;
+//                                cout << testPS.pSet[i].pC.c<<endl;
+//                                cout << testPS.pSet[i].pC.r <<endl;
+                                tempMean[lm] = tempMean[lm] + (float)testPS.pSet[i].pC.c/640;
+                                tempMean[lm+1] = tempMean[lm+1] + (float)testPS.pSet[i].pC.r/480;
+                            }
+
+                            //v.trace
+                            //cout << "vote used: " << tempMean[0] << " " << tempMean[1] << " " << tempMean[2] << endl;
+                            //votes.push_back(v);
+                            estimatedMean.push_back(tempMean);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
 }

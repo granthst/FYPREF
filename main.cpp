@@ -19,11 +19,16 @@
 
 #define PATCH_SET_SIZE 40
 #define DATA_SET_SIZE 496
-#define NO_TEST_SUBJECTS 5
+#define NO_TEST_SUBJECTS 100
 #define n 6
-#define THESHOLD_MAX 1000
-#define NUMBER_TREES 1
-#define NO_MEAN 100
+#define THESHOLD_MAX 800
+#define NUMBER_TREES 15
+#define NO_MEAN 1
+#define ERROR_TH 75
+#define ERROR_TH_2D 0.01
+#define NUM_TEST 400
+#define NUM_LANDMARKS 17
+#define NUMBER_POSE 19
 using namespace cv;
 
 bool swaped=false;
@@ -96,146 +101,233 @@ void findMasks(vector<Mat> masks, vector<boundingBox>& headMasks);
 
 boundingBox findMask(Mat mask);
 
+void eliminateOutliars(vector<vector<float>> estimated,vector<float>& newMean);
+
+void runTestImage(int i,DForest forest,vector<float> calM);
+
+vector<vector<float>> readLandMarks(string fname);
+
+vector<Point> getdots(vector<vector<float>> landmarks);
+
+void displydots(vector<Point> dots,Mat image);
+
+void loadPoses( const string& fileName,vector<vector<int>>& mDepthList );
+
+vector<int> loadLandmarks(string fname);
+
+boundingBox findBbox2d(vector<Point> dots);
+
+void load2dTrainingset(vector<Mat>& trainingset2d, vector<vector<vector<float>>>& landmarks, vector<boundingBox>& bboxs);
+
+void pickWantedLandmarks(vector<vector<float>> landmarks, vector<vector<float>>& newlandmarks);
+
+vector<vector<float>> computeMeanVector2d(vector<vector<float>> data);
+
+void removeoutliars(vector<vector<float>>& newMean,vector<vector<float>> data);
+
 int main(int argc, const char * argv[])
 {
-    srand(time(NULL));
+    //srand(time(NULL));
     
 
     
-    /*vector<threeDPostCal> integralImage;
-    vector<int16_t*> trainingSet;
-    vector<vector<float>> groundTruthSetBin;
-    vector<HPatch> wholeDataSet;
-    vector<Mat> img3DList;
-    vector<Mat> depthIntegral;
-    //read the images
-    for(int j = 0; j < NO_TEST_SUBJECTS; j++){
-        string depth_path = "/Users/Knowhow10/Downloads/kinect_head_pose_db/0"+convertInt(j+1)+"/";
-        string bin_path = "/Users/Knowhow10/Desktop/db_annotations/0"+convertInt(j+1)+"/";
-        loadTrainingSet(depth_path,trainingSet);
-        loadGroundSetBin(bin_path,groundTruthSetBin);
-        cout << trainingSet.size() << endl;
-    }
+//    vector<threeDPostCal> integralImage;
+//    vector<int16_t*> trainingSet;
+//    vector<vector<float>> groundTruthSetBin;
+//    vector<HPatch> wholeDataSet;
+//    vector<Mat> img3DList;
+//    vector<Mat> depthIntegral;
+//    vector<Mat> rgbs;
+//    vector<Mat> rgbIntegral;
+//    //read the images
+//    for(int j = 1; j <= NO_TEST_SUBJECTS; j++){
+//        string depth_path;
+//        string bin_path;
+//        if(j!= 6){
+//            if(j < 10){
+//                depth_path = "/Users/Knowhow10/Downloads/kinect_head_pose_db/0"+convertInt(j)+"/";
+//                bin_path = "/Users/Knowhow10/Desktop/db_annotations/0"+convertInt(j)+"/";
+//            }
+//            else{
+//                depth_path = "/Users/Knowhow10/Downloads/kinect_head_pose_db/"+convertInt(j)+"/";
+//                bin_path = "/Users/Knowhow10/Desktop/db_annotations/"+convertInt(j)+"/";
+//            }
+//            //loadTrainingSet(depth_path,trainingSet);
+//            loadRGBImages(rgbs, depth_path);
+//            loadGroundSetBin(bin_path,groundTruthSetBin);
+//            cout << rgbs.size() << endl;
+//            cout << groundTruthSetBin.size() << endl;
+//        }
+//    }
+//    for(int i = 0; i < rgbs.size(); i++){
+//        Mat Sumimage = Mat(481,641,CV_64FC3);
+//        integral(rgbs[i], Sumimage);
+//        rgbIntegral.push_back(Sumimage);
+//    }
+    //cout << rgbIntegral[0] << endl;
+//    for(int i = 1; i <= NO_TEST_SUBJECTS; i++){
+//        if(i != 6){
+//            cout << i << "th person " << endl;
+//            string depth_path;
+//            if(i < 10){
+//                depth_path = "/Users/Knowhow10/Downloads/kinect_head_pose_db/0"+convertInt(i)+"/";
+//            }
+//            else{
+//                depth_path = "/Users/Knowhow10/Downloads/kinect_head_pose_db/"+convertInt(i)+"/";
+//            }
+//            string cal_filename = depth_path + "depth.cal";
+//            vector<float> calM;
+//            calM = loadCalFile(cal_filename);
+//            for(int k = 0; k < DATA_SET_SIZE; k++ ){
+//                //cout << k << "th image " <<endl;
+//                Mat* channels = new Mat[3];
+//                Mat depthI = Mat(480, 640, CV_32FC3);
+//                Mat sumI = Mat(481, 641, CV_64FC3);
+//                Mat img3D;
+//                int offset = 0;
+//                if(i<7)
+//                    offset = (i-1)*DATA_SET_SIZE+k;
+//                else
+//                    offset = (i-2)*DATA_SET_SIZE+k;
+//                getIntegralImageDepthChannel(depthI,trainingSet[offset],channels,calM,img3D);
+//                integral(channels[2],sumI);
+//                depthIntegral.push_back(sumI);
+//                
+//                img3DList.push_back(img3D);
+//            }
+//        }
+//        cout << depthIntegral.size() << endl;
+//    }
+    //cout << depthIntegral.size() << endl;
+//    vector<boundingBox> headmasks;
+//    loadBBox(headmasks, NO_TEST_SUBJECTS);
+//    //generating the patches
+//    boundingBox bbox;
+//    for( int i = 0; i < trainingSet.size(); i++ ){
+//        cout << "#####     i = " << i << endl;
+//        PatchSet pS(PATCH_SET_SIZE);
+//        bbox = getBoundingBox(trainingSet[i]);
+//        //cout << "bbox big" << bbox.x <<  " " << bbox.y << endl;
+//        //depthTo3D = get3dFromDepth(trainingSet[i],calM);
+//        pS.getRandomPatches(headmasks[i], img3DList[i], groundTruthSetBin[i],0);
+//        //cout << "number of positive patches" << pS.pSet.size() << endl;
+//        pS.getRandomPatches(bbox, img3DList[i], groundTruthSetBin[i],1);
+//        //cout << " gt : " << groundTruthSetBin[i][0] << " " << groundTruthSetBin[i][1] << " " << groundTruthSetBin[i][2] << " " << groundTruthSetBin[i][3] << " " << groundTruthSetBin[i][4] << " " << groundTruthSetBin[i][5] << endl;
+//        //cout << "number of patches" << pS.pSet.size() << endl;;
+//        for (int j = 0; j <  PATCH_SET_SIZE; j++){
+//            pS.pSet[j].index = i;
+//            wholeDataSet.push_back(pS.pSet[j]);
+//        }
+//        cout << "number of patches " << wholeDataSet.size() << endl;
+//    }
     
-    for(int i = 0; i < NO_TEST_SUBJECTS; i++){
-        cout << i << "th person " << endl;
-        string depth_path = "/Users/Knowhow10/Downloads/kinect_head_pose_db/0"+convertInt(i+1)+"/";
-        string cal_filename = depth_path + "depth.cal";
-        vector<float> calM;
-        calM = loadCalFile(cal_filename);
-        for(int k = 0; k < DATA_SET_SIZE; k++ ){
-            //cout << k << "th image " <<endl;
-            Mat* channels = new Mat[3];
-            Mat depthI = Mat(480, 640, CV_32FC3);
-            Mat sumI = Mat(481, 641, CV_64FC3);
-            Mat img3D;
-            getIntegralImageDepthChannel(depthI,trainingSet[i*DATA_SET_SIZE+i],channels,calM,img3D);
-            integral(channels[2],sumI);
-            depthIntegral.push_back(sumI);
-            img3DList.push_back(img3D);
-        }
-        
-    }
-    vector<boundingBox> headmasks;
-    loadBBox(headmasks, NO_TEST_SUBJECTS);
-    //generating the patches
-    boundingBox bbox;
-    for( int i = 0; i < trainingSet.size(); i++ ){
-        cout << "#####     i = " << i << endl;
-        PatchSet pS(PATCH_SET_SIZE);
-        bbox = getBoundingBox(trainingSet[i]);
-        //cout << "bbox big" << bbox.x <<  " " << bbox.y << endl;
-        //depthTo3D = get3dFromDepth(trainingSet[i],calM);
-        pS.getRandomPatches(headmasks[i], img3DList[i], groundTruthSetBin[i],0);
-        //cout << "number of positive patches" << pS.pSet.size() << endl;
-        pS.getRandomPatches(bbox, img3DList[i], groundTruthSetBin[i],1);
-        //cout << " gt : " << groundTruthSetBin[i][0] << " " << groundTruthSetBin[i][1] << " " << groundTruthSetBin[i][2] << " " << groundTruthSetBin[i][3] << " " << groundTruthSetBin[i][4] << " " << groundTruthSetBin[i][5] << endl;
-        //cout << "number of patches" << pS.pSet.size() << endl;;
-        for (int j = 0; j <  PATCH_SET_SIZE; j++){
-            pS.pSet[j].index = i;
-            wholeDataSet.push_back(pS.pSet[j]);
-        }
-        //cout << "number of patches " << wholeDataSet.size() << endl;
-    }
-    
-    
-    //build the forest
-    DForest forest(NUMBER_TREES);
-    forest.growForest(wholeDataSet, depthIntegral);
-    forest.writeForest();*/
+//    trainingSet.clear();
+//    groundTruthSetBin.clear();
+//    //build the forest
+//    DForest forest(NUMBER_TREES);
+//    forest.growForest(wholeDataSet, depthIntegral);
+//    forest.writeForest();
     
     
     //DTree testTree;
     //testTree.read_tree(treefile);
     
-    DForest forest(NUMBER_TREES);
+    /*DForest forest(NUMBER_TREES);
     forest.loadTree();
-
-    string testImagefile = "/Users/Knowhow10/Downloads/kinect_head_pose_db/01/frame_00080_depth.bin";
-    string testImageGTfile = "/Users/Knowhow10/Desktop/db_annotations/01/frame_00080_pose.bin";
-    string cal_filename = "/Users/Knowhow10/Downloads/kinect_head_pose_db/01/depth.cal";
+    string cal_filename = "/Users/Knowhow10/Downloads/kinect_head_pose_db/02/depth.cal";
     vector<float> calM;
     calM = loadCalFile(cal_filename);
-    int16_t* testImage = loadDepthImageCompressed(testImagefile.c_str());
-    boundingBox testBbox = getBoundingBox(testImage);
-    //vector<vector<float>> groundTruthSetBin = loadGroundSetBin(bin_path);
-    Mat* channels = new Mat[3];
-    Mat depthI = Mat(480, 640, CV_32FC3);
-    Mat sumI = Mat(481, 641, CV_64FC3);
-    Mat img3D;
-    getIntegralImageDepthChannel(depthI,testImage,channels,calM,img3D);
-    integral(channels[2],sumI);
-    vector<float> testGt = loadPoseBin(testImageGTfile);
-    //cout << "test " << testGt[0] << " " << testGt[1] << " " << testGt[2] << " " << testGt[3] << " " << testGt[4] << " " << testGt[5] << endl;
-    //vector<vector<float>> estimatedMean;
-    //testTree.regressionEstimation(sumI, testBbox, testGt, estimatedMean,img3D);
-    vector<vector<float>> estimatedMean;
-    vector<float> trueMean;
-    for(int i = 0; i < NO_MEAN; i++){
-        forest.regressionEstimation(sumI, testBbox, testGt, img3D);
-        vector<float> estimatedMean2 = computeMeanVector(forest.estimatedMean);
-        cout << forest.estimatedMean.size() << endl;
-        estimatedMean.push_back(estimatedMean2);
-        cout << "estimated " << estimatedMean2[0] << " " << estimatedMean2[1] << " " << estimatedMean2[2] << " " << estimatedMean2[3] << " " << estimatedMean2[4] << " " << estimatedMean2[5] << endl;
-        cout << "ground_T " << testGt[0] << " " << testGt[1] << " " << testGt[2] << " " << testGt[3] << " " << testGt[4] << " " << testGt[5] << endl;
-        vector<double> error = Error(estimatedMean2,testGt);
-        cout << "nose error : " << error[0] << " mm " << endl;
-        cout << "angle error : " << error[1] << " degrees " << endl;
-    }
-    trueMean = computeMeanVector(estimatedMean);
-    cout << "estimated " << trueMean[0] << " " << trueMean[1] << " " << trueMean[2] << " " << trueMean[3] << " " << trueMean[4] << " " << trueMean[5] << endl;
+
+    for(int j = 4; j < NUM_TEST; j++){
+        
+        runTestImage(j, forest, calM);
     
-    /***
-    string rgbImagePath = "/Users/Knowhow10/Downloads/kinect_head_pose_db/01/";
-    string bboxFilename = "bbox1.txt";
-    //Mat image;
-    //image = imread(rgbImagePath, CV_LOAD_IMAGE_COLOR);   // Read the file
-    //Mat sum = Mat(481, 641, CV_64FC3);
-    //integral(image,sum);
-    //cout << sum << endl;
-    //cout << image.rows << endl;
-    vector<int16_t*> trainingSet;
-    vector<Mat> rgbs;
-    loadRGBImages(rgbs,rgbImagePath);
-    //loadTrainingSet(rgbImagePath,trainingSet);
-    //saveBBox(trainingSet);
-    vector<boundingBox> bboxSet;
-    loadBBox(bboxSet,bboxFilename);
-    ***/
-    /*for(int i = 0; i < NO_TEST_SUBJECTS; i++){
-        string maskFilename = "/Users/Knowhow10/Desktop/head_pose_masks/0"+convertInt(i+1)+"/";
-        string headmaskFname = "headmask"+convertInt(i+1)+".txt";
-        vector<Mat> masks ;
-        loadMaskImages(masks, maskFilename);
-        cout << masks.size() << endl;
-        vector<boundingBox> headmasks;
-        findMasks(masks, headmasks);
-        saveBBox(headmasks,headmaskFname);
-        cout << "subject " << i+1 << " done" << endl;
     }*/
-//    vector<boundingBox> headmasks;
-//    loadBBox(headmasks, NO_TEST_SUBJECTS);
-//    cout << headmasks.size() << endl;
+
+//    vector<double> error = Error(trueMean,testGt);
+//    cout << "nose error : " << error[0] << " mm " << endl;
+//    cout << "angle error : " << error[1] << " degrees " << endl;
+
+//    string landmarkfilepath = "/Users/Knowhow10/Desktop/FaceWarehouse_Data_0.part1/Tester_1/TrainingPose";
+//    vector<vector<float>> landmarks;
+//    string fname = "landmarks.txt";
+//    vector<int> lms = loadLandmarks(fname);
+//    landmarks = readLandMarks(landmarkfilepath+"/pose_1.land");
+//    vector<vector<vector<float>>> trainLandmarks;
+//    vector<Mat> trainSet2d;
+//    vector<boundingBox> bboxs;
+//    boundingBox bigBbox;
+//    bigBbox.height = 400;
+//    bigBbox.width = 560;
+//    bigBbox.x = 0;
+//    bigBbox.y = 0;
+//    load2dTrainingset(trainSet2d,trainLandmarks,bboxs);
+//    //cout << trainLandmarks[0][0][0] << " " << trainLandmarks[0][0][1]<< endl;
+//    vector<HPatch> wholeDataSet;
+//    for( int i = 0; i < trainSet2d.size(); i++ ){
+//        cout << "#####     i = " << i << endl;
+//        PatchSet pS(PATCH_SET_SIZE);
+//        
+//        //cout << "bbox big" << bbox.x <<  " " << bbox.y << endl;
+//        //depthTo3D = get3dFromDepth(trainingSet[i],calM);
+//        pS.getRandomPatches2d(bboxs[i], trainSet2d[i], trainLandmarks[i],0);
+//        //cout << "number of positive patches" << pS.pSet.size() << endl;
+//        pS.getRandomPatches2d(bigBbox, trainSet2d[i], trainLandmarks[i],1);
+//        //cout << " gt : " << groundTruthSetBin[i][0] << " " << groundTruthSetBin[i][1] << " " << groundTruthSetBin[i][2] << " " << groundTruthSetBin[i][3] << " " << groundTruthSetBin[i][4] << " " << groundTruthSetBin[i][5] << endl;
+//        cout << "number of patches" << pS.pSet.size() << endl;;
+//        for (int j = 0; j <  PATCH_SET_SIZE; j++){
+//            pS.pSet[j].index = i;
+//            wholeDataSet.push_back(pS.pSet[j]);
+//        }
+//        cout << "number of patches " << wholeDataSet.size() << endl;
+//    }
+//    //cout << wholeDataSet[123].index <<endl;
+//    //imshow("Display window", trainSet2d[156] );
+//    //cout << gray_image << endl;
+//    //waitKey(0);
+//    DForest forest(NUMBER_TREES);
+//    forest.growForest(wholeDataSet, trainSet2d);
+//    forest.writeForest();
+    
+    DForest forest(NUMBER_TREES);
+    forest.loadTree();
+    
+    Mat testImage;
+    string testimagepath = "/Users/Knowhow10/Desktop/projectFacedata/Tester_10/TrainingPose/pose_10";
+    testImage = imread(testimagepath+".png",CV_LOAD_IMAGE_GRAYSCALE);
+    Mat testSum = Mat(481,641,CV_64FC3);
+    integral(testImage, testSum);
+    vector<vector<float>> templms1,templms2;
+    vector<Point> dots;
+    templms1 = readLandMarks(testimagepath+".land");
+    //cout << templms1.size() <<endl;
+    pickWantedLandmarks(templms1, templms2);
+    dots = getdots(templms1);
+    boundingBox testBbox = findBbox2d(dots);
+    clock_t t = clock();
+    forest.regressionEstimation2d(testSum, testBbox, templms2);
+    //cout << forest.estimatedMean.size() << endl;
+    vector<vector<float>> mean ;//= computeMeanVector2d(forest.estimatedMean);
+    removeoutliars(mean,forest.estimatedMean);
+    t = clock() - t;
+    cout << "time " << (float)t/CLOCKS_PER_SEC << endl;
+//    for(int j = 0; j < forest.estimatedMean.size() ; j++){
+//        for(int i =0; i < 17; i= i+2){
+//            cout << "feature " << i << " x: " << forest.estimatedMean[j][i] << " y: " << forest.estimatedMean[j][i+1] << endl;
+//        }
+//    }
+//    for(int j = 0; j < mean.size(); j++){
+//        cout << "estimated x : " << mean[j][0] << " y : " << mean[j][1] << endl;
+//        cout << "true x : " << templms2[j][0] << " true y: " << templms2[j][1] <<endl;
+//        float err = sqrt((mean[j][0] - templms2[j][0])*(mean[j][0] - templms2[j][0]) + ((mean[j][1]-templms2[j][1])*(mean[j][1]-templms2[j][1])));
+//        cout << " error " << err <<endl;
+//    }
+    vector<Point> estimatedDots = getdots(mean);
+    vector<Point> trueDots = getdots(templms2);
+    displydots(estimatedDots, testImage);
+    displydots(trueDots, testImage);
+    imshow("Display window", testImage );
+    waitKey(0);
     return 0;
 }
 
@@ -317,6 +409,7 @@ void loadTrainingSet(string depth_path,vector<int16_t*>& trainingSet){
     int16_t* img = new int16_t[640*480];
     string subS = "";
     string depthFname = depth_path;
+    ifstream fInp;
     for(int i = 4; i < 500; i++){
 		if(i<10)
 			subS = "00"+convertInt(i);
@@ -325,10 +418,12 @@ void loadTrainingSet(string depth_path,vector<int16_t*>& trainingSet){
 		else
 			subS = convertInt(i);
 		depthFname = depth_path  + "frame_00"+subS+"_depth.bin";
-		
-		img = loadDepthImageCompressed( depthFname.c_str());
-		
-		trainingSet.push_back(img);
+		fInp.open(depthFname);
+        if(fInp.is_open()){
+            fInp.close();
+            img = loadDepthImageCompressed( depthFname.c_str());
+            trainingSet.push_back(img);
+        }
 		
 	}
     
@@ -360,6 +455,7 @@ void loadGroundSetBin(string bin_path,vector<vector<float>>& groundSetBin){
     vector<float> tempG;
     string subS = "";
     string poseFname = bin_path;
+    ifstream fInp;
     for(int i = 4; i < 500; i++){
 		if(i<10)
 			subS = "00"+convertInt(i);
@@ -368,9 +464,12 @@ void loadGroundSetBin(string bin_path,vector<vector<float>>& groundSetBin){
 		else
 			subS = convertInt(i);
         poseFname = bin_path  + "frame_00"+subS+"_pose.bin";
-        tempG = loadPoseBin(poseFname);
-        //cout << tempG[0] << endl;
-        groundSetBin.push_back(tempG);
+        fInp.open(poseFname);
+        if(fInp.is_open()){
+            fInp.close();
+            tempG = loadPoseBin(poseFname);
+            groundSetBin.push_back(tempG);
+        }
     }
     
     
@@ -650,7 +749,7 @@ void loadRGBImages(vector<Mat>& rgb, string filepath){
 		else
 			subS = convertInt(i);
         filename = filepath  + "frame_00"+subS+"_rgb.png";
-        temp = imread(filename, CV_LOAD_IMAGE_COLOR);
+        temp = imread(filename, CV_LOAD_IMAGE_GRAYSCALE);
         rgb.push_back(temp);
     }
 }
@@ -659,6 +758,7 @@ void loadMaskImages(vector<Mat>& rgb, string filepath){
     Mat temp;
     string subS = "";
     string filename = "";
+    ifstream fInp;
     for(int i = 4; i < 500; i++){
 		if(i<10)
 			subS = "00"+convertInt(i);
@@ -667,8 +767,12 @@ void loadMaskImages(vector<Mat>& rgb, string filepath){
 		else
 			subS = convertInt(i);
         filename = filepath  + "frame_00"+subS+"_depth_mask.png";
-        temp = imread(filename, CV_LOAD_IMAGE_COLOR);
-        rgb.push_back(temp);
+        fInp.open(filename);
+        if(fInp.is_open()){
+            fInp.close();
+            temp = imread(filename, CV_LOAD_IMAGE_COLOR);
+            rgb.push_back(temp);
+        }
     }
 }
 
@@ -684,15 +788,17 @@ void saveBBox(vector<boundingBox> masks,string fname){
 void loadBBox(vector<boundingBox>& bboxSet, int size){
     boundingBox temp;
     for(int j = 0; j < size; j++){
-        string fname = "headmask"+convertInt(j+1)+".txt";
-        ifstream fInp;
-        fInp.open(fname);
-        for(int i = 0; i < DATA_SET_SIZE; i ++){
-            fInp >> temp.x >> temp.y >> temp.width >> temp.height;
-            bboxSet.push_back(temp);
-            //cout << bboxSet[i].x << " " << bboxSet[i].y << " " << bboxSet[i].width << " " << bboxSet[i].height << endl;
+        if(j!=5){
+            string fname = "headmask"+convertInt(j+1)+".txt";
+            ifstream fInp;
+            fInp.open(fname);
+            for(int i = 0; i < DATA_SET_SIZE; i ++){
+                fInp >> temp.x >> temp.y >> temp.width >> temp.height;
+                bboxSet.push_back(temp);
+                //cout << bboxSet[i].x << " " << bboxSet[i].y << " " << bboxSet[i].width << " " << bboxSet[i].height << endl;
+            }
+            fInp.close();
         }
-        fInp.close();
     }
     
 }
@@ -731,4 +837,222 @@ void findMasks(vector<Mat> masks, vector<boundingBox>& headMasks){
         temp = findMask(masks[i]);
         headMasks.push_back(temp);
     }
+}
+
+void eliminateOutliars(vector<vector<float>> estimated,vector<float>& newMean){
+    vector<float> tempMean;
+    //vector<float> err;
+    vector<vector<float>> afterElimination;
+    tempMean = computeMeanVector(estimated);
+    for(int i =0; i < estimated.size(); i++){
+        vector<double> err = Error(estimated[i], tempMean);
+        //cout << err[0] << " mm " << endl;
+        if(err[0] <= ERROR_TH)
+            afterElimination.push_back(estimated[i]);
+            
+    }
+    cout << "after size " << afterElimination.size() << endl;
+    if(afterElimination.size() >0)
+        newMean = computeMeanVector(afterElimination);
+
+}
+
+void runTestImage(int i,DForest forest,vector<float> calM){
+    string subS = "";
+    string testImagefile = "";
+    string testImageGTfile = "";
+    if(i<10)
+        subS = "00"+convertInt(i);
+    else if (i>=10 && i < 100)
+        subS = "0"+convertInt(i);
+    else
+        subS = convertInt(i);
+    testImagefile = "/Users/Knowhow10/Downloads/kinect_head_pose_db/02/frame_00"+subS+ "_depth.bin";
+    testImageGTfile = "/Users/Knowhow10/Desktop/db_annotations/02/frame_00"+subS+"_pose.bin";
+
+    int16_t* testImage = loadDepthImageCompressed(testImagefile.c_str());
+    boundingBox testBbox = getBoundingBox(testImage);
+    //vector<vector<float>> groundTruthSetBin = loadGroundSetBin(bin_path);
+    Mat* channels = new Mat[3];
+    Mat depthI = Mat(480, 640, CV_32FC3);
+    Mat sumI = Mat(481, 641, CV_64FC3);
+    Mat img3D;
+    getIntegralImageDepthChannel(depthI,testImage,channels,calM,img3D);
+    integral(channels[2],sumI);
+    vector<float> testGt = loadPoseBin(testImageGTfile);
+    vector<float> trueMean;
+    forest.regressionEstimation(sumI, testBbox, testGt, img3D);
+    vector<float> after;
+    eliminateOutliars(forest.estimatedMean,after);
+    if(after.size() > 0){
+        cout << "estimated " << after[0] << " " << after[1] << " " << after[2] << " " << after[3] << " " << after[4] << " " << after[5] << endl;
+        cout << "ground_T " << testGt[0] << " " << testGt[1] << " " << testGt[2] << " " << testGt[3] << " " << testGt[4] << " " << testGt[5] << endl;
+        vector<double> error = Error(after,testGt);
+        cout << "nose error : " << error[0] << " mm " << endl;
+        cout << "angle error : " << error[1] << " degrees " << endl;
+    }
+    forest.estimatedMean.clear();
+}
+
+vector<vector<float>> readLandMarks(string fname){
+    vector<vector<float>> landmarks;
+    vector<float> temp;
+    float tempf;
+    ifstream fInp;
+    fInp.open(fname);
+    if(fInp.is_open()){
+        fInp>> tempf;
+        for(int i = 0; i < 74; i++){
+            fInp >> tempf;
+            //cout << tempf;
+            temp.push_back(tempf);
+            fInp >> tempf;
+            temp.push_back(1-tempf);
+            landmarks.push_back(temp);
+            temp.clear();
+        }
+    }
+    fInp.close();
+
+    return landmarks;
+}
+
+vector<Point> getdots(vector<vector<float>> landmarks){
+    vector<Point> dots;
+    for(int i = 0; i < NUM_LANDMARKS; i++){
+        //cout << "x : " << 640*landmarks[i][0] << " y " << 480 - 480*landmarks[i][1] <<endl;
+        Point temp = Point(640*landmarks[i][0],480*landmarks[i][1]);
+        dots.push_back(temp);
+    }
+    return dots;
+}
+void displydots(vector<Point> dots,Mat image){
+    for(int i = 0; i < NUM_LANDMARKS; i=i+1){
+        //circle(image, dots[i],1,CV_RGB(255,0,0),3);
+        string s = convertInt(i);
+        cv::putText(image,s, dots[i], CV_FONT_HERSHEY_PLAIN, 0.4,CV_RGB(255,0,0));
+    }
+}
+
+vector<int> loadLandmarks(string fname){
+    vector<int> lms;
+    int temp = 0;
+    ifstream fInp;
+    fInp.open(fname);
+    while(!fInp.eof()){
+        fInp >> temp;
+        lms.push_back(temp);
+    }
+    return lms;
+}
+
+boundingBox findBbox2d(vector<Point> dots){
+    boundingBox bbox;
+    bbox.x = dots[1].x-10;
+    //cout << " dot7 y " << dots[7].y << endl;
+    bbox.y = dots[7].y-200;
+    //cout << dots[13].x - dots[1].x << endl;
+    bbox.width = dots[13].x - dots[1].x + 20;
+    bbox.height = dots[7].y - dots[7].y+200 + 10;
+    return bbox;
+}
+
+void load2dTrainingset(vector<Mat>& trainingset2d, vector<vector<vector<float>>>& landmarks, vector<boundingBox>& bboxs){
+    Mat temp;
+    vector<vector<float>> templms1,templms2;
+    vector<Point> tempdots;
+    boundingBox tempbbox;
+    string folderpath = "/Users/Knowhow10/Desktop/projectFacedata/Tester_";
+    string pngfilename = "pose_";
+    string landmarkfilename = "";
+    for(int i = 1; i <= NO_TEST_SUBJECTS; i++){
+        for(int j = 0; j < NUMBER_POSE; j++){
+            Mat Sumimage = Mat(481,641,CV_64FC3);
+            string subs1 = convertInt(i) + "/TrainingPose/";
+            temp = imread(folderpath+subs1+pngfilename+convertInt(j)+".png",CV_LOAD_IMAGE_GRAYSCALE);
+            //cout << " image read ok " << endl;
+            integral(temp,Sumimage);
+            templms1 = readLandMarks(folderpath+subs1+pngfilename+convertInt(j)+".land");
+            pickWantedLandmarks(templms1,templms2);
+            tempdots = getdots(templms1);
+            tempbbox = findBbox2d(tempdots);
+            trainingset2d.push_back(Sumimage);
+            bboxs.push_back(tempbbox);
+            landmarks.push_back(templms2);
+            templms1.clear();
+            tempdots.clear();
+            templms2.clear();
+           // cout << i << " " << j << " done " << endl;
+        }
+        
+    }
+    cout << trainingset2d.size() << endl;
+    
+}
+
+void pickWantedLandmarks(vector<vector<float>> landmarks, vector<vector<float>>& newlandmarks){
+    
+    string fname = "landmarks.txt";
+    vector<int> lms = loadLandmarks(fname);
+    for(int i = 0; i < lms.size(); i++){
+        newlandmarks.push_back(landmarks[lms[i]]);
+    }
+}
+
+vector<vector<float>> computeMeanVector2d(vector<vector<float>> data){
+    vector<vector<float>> bigmean;
+    for(int i = 0; i < 34; i= i+2){
+        vector<float> smallmean;
+        float tempx = 0;
+        float tempy = 0;
+        for(int j = 0; j < data.size(); j++){
+            tempx = tempx + data[j][i];
+            tempy = tempy + data[j][i+1];
+        }
+        tempx = tempx / data.size();
+        tempy = tempy / data.size();
+        smallmean.push_back(tempx); smallmean.push_back(tempy);
+        bigmean.push_back(smallmean);
+        
+    }
+    //cout << bigmean.size() <<endl;
+    return bigmean;
+}
+
+void removeoutliars(vector<vector<float>>& newMean,vector<vector<float>> data){
+    vector<vector<float>> oldmean = computeMeanVector2d(data);
+    //cout << "data size " << data[18].size() <<endl;
+    for(int i = 0; i < 17; i++){
+        //cout << " i " << i <<endl;
+        float tempx = 0;
+        float tempy = 0;
+        vector<float> smallmean;
+        int countx = 0;
+        int county = 0;
+        for(int j = 0; j < data.size(); j++){
+//            cout << "j " << j << endl;
+//            cout << " 2i " << i + i <<endl;
+//            cout << " 2i+1 " << i+i+1 <<endl;
+            float errx = oldmean[i][0] - data[j][i+i];
+            float erry = oldmean[i][1] - data[j][i+i+1];
+//            cout << "errx " << errx << endl;
+//            cout << "erry " << erry << endl;
+            if(errx <= ERROR_TH_2D){
+                tempx = tempx + data[j][i+i];
+                
+                countx++;
+            }
+            if(erry <= ERROR_TH_2D){
+                tempy = tempy + data[j][i+i+1];
+                county++;
+            }
+        }
+        tempx = tempx /countx;
+        tempy = tempy /county;
+        smallmean.push_back(tempx); smallmean.push_back(tempy);
+        newMean.push_back(smallmean);
+    }
+    //cout << " new mean size " << newMean.size() <<endl;
+    
+    
 }
