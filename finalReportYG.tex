@@ -161,9 +161,7 @@ in the\\
 \end{titlepage}
 
 % blank page
-\thispagestyle{empty}
-\mbox{}
-\newpage
+
 
 %----------------------------------------------------------------------------------------
 %	ABSTRACT PAGE
@@ -171,7 +169,7 @@ in the\\
 
 \addtotoc{Abstract} % Add the "Abstract" page entry to the Contents
 
-\abstract{Write Abstract here...}
+\abstract{This project concerns the research of human face image analysis. The main emphasis of this project is on using the state of the art machine learning algorithm to implement tasks such as head pose estimation for depth images and face landmark detection for RGB images. Random forest will be the method of choice here because it ability to handle large datasets as well as the better prediction performance. As far as head pose estimation is concerned, since human head can be modelled as a rigid object, head pose can be represented by the three angles known as yaw, roll and pitch. Such angles as well as the position of the nose in 3D space will be estimated at a relatively fast speed. In the case of face feature detection, given a RGB image, face features such as eyes, mouth and lips will be automatically and detected robustly with acceptable accuracy.}
 
 \clearpage % Start a new page
 
@@ -181,45 +179,16 @@ in the\\
 
 \setstretch{1.3} % Reset the line-spacing to 1.3 for body text (if it has changed)
 
-\acknowledgements{Write Acknowledgements here...}
+\acknowledgements{
+First of all, I would like to thank Dr. Tae-Kyun Kim for provide the opportunity to work on this topic. 
+
+Secondly, I would also like to thank my co-advisor, Xiaowei Zhao, Ph.D for the help and advice I received from him throughout the year. 
+
+Finally, I would like express my gratitude to  Hesam Ipakchi and HongCheng Guo for their support along the way.}
 
 \clearpage % Start a new page
 
-%----------------------------------------------------------------------------------------
-%	LIST OF CONTENTS/FIGURES/TABLES PAGES
-%----------------------------------------------------------------------------------------
 
-\tableofcontents
-
-\listoffigures
-
-\listoftables
-
-
-%----------------------------------------------------------------------------------------
-%	NOTATIONS
-%----------------------------------------------------------------------------------------
-
-\clearpage % Start a new page
-
-\setstretch{1.3} % Reset the line-spacing to 1.3 for body text (if it has changed)
-
-\listofnomenclature{ll}
-{
-$\cardinality{\setvar{S}}$ & Cardinality of the set $\setvar{S}$ \\
-$\one_{\setvar{S}}$ & Indicator variable over the set $\setvar{S}$ \\
-$y$ & Scalar $y$ \\
-$\abs{y}$ & Absolute value of $y$ \\
-$\vecvar{v}$ & Vector $\vecvar{v}$ \\
-$\matvar{M}$ & Matrix $\matvar{M}$ \\
-$M_{ij}$ & The element of the matrix $\matvar{M}$ at row $i$ and column $j$\\
-$\transpose{\matvar{M}}$ & Transpose of the matrix $\matvar{M}$ \\
-$\abs{\matvar{M}}$ & Determinant of the matrix $\matvar{M}$ \\
-$\trace{\matvar{M}}$ & Trace of the matrix $\matvar{M}$ \\
-$\expectation{X}$ & Expected value of $X$ \\
-$\variance{X}$ & Variance of $X$ \\
-$\natlog(x)$ & \emphT{natural logarithm} of $x$ (logarithm to the base $\euler$)
-}
 
 %----------------------------------------------------------------------------------------
 %	THESIS CONTENT - CHAPTERS

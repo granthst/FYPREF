@@ -79,5 +79,14 @@ Integral Images},'' 2007
 \bibitem{facedetect}
 Viola, P. and Jones, M. J. Robust Real-Time Face Detection. International Journal of Computer Vision (IJCV) 57 (2, 2004) 137–154.
 
+\bibitem{okada}
+Okada, R.: Discriminative generalized hough transform for object detection. In: International Conference on Computer Vision (2009)
+
+\bibitem{facewarehouse}
+Chen Cao, Yanlin Weng, Shun Zhou, Yiying Tong, Kun Zhou, FaceWarehouse: a 3D Facial Expression Database for Visual Computing
+
+\bibitem{AdaBoost}
+Robert E. Schapire, Explaining AdaBoost
+
 \end{thebibliography}
 

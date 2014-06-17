@@ -42,7 +42,7 @@ Euler Angles are the most commonly used rotational coordinates. As far as this p
 \begin{figure}
 	\centering
 	\includegraphics[width=0.8\linewidth]{headpose1.png}
-	\caption[Euler Angles]{\label{fig:eulerangles}}  \textbf{The three degrees of freedom of a human head can be described by the egocentric rotation angles pitch, roll, and yaw \cite{HPS}} 
+	\caption[Euler Angles]{\label{fig:eulerangles}}  \textbf{"The three degrees of freedom of a human head can be described by the egocentric rotation angles pitch, roll, and yaw "\cite{HPS}} 
 \end{figure}
 
 
@@ -52,6 +52,9 @@ Euler Angles are the most commonly used rotational coordinates. As far as this p
 
 %\section{General Object Detection Methods}
 %\label{sec:objectD}
+\newpage
+\thispagestyle{plain}
+\mbox{}
 
 \section{Haar-Like Features}
 \label{sec:HLfeatures}
@@ -59,7 +62,7 @@ The use of Haar-Like feature (as shown in Fig \ref{fig:hlfeature}) plays a big r
 
 \begin{figure}
 	\centering
-	\includegraphics[width=0.8\linewidth]{hlfeature.png}
+	\includegraphics[width=0.6\linewidth]{hlfeature.png}
 	\caption[Haar like Feature]{\label{fig:hlfeature}}  \textbf{A, B show the two rectangular feature whereas C and D show three rectangular feature and four rectangular feature respectively. The sum of the pixel values in the white rectangle is subtracted from the sum of the pixel values in the grey one. } \cite{facedetect}
 \end{figure}
 
@@ -73,18 +76,49 @@ Where $sum(x,y)$ is the pixel value at position (x,y) of the integral image and 
 
 \begin{figure}
 	\centering
-	\includegraphics[width=0.8\linewidth]{integral1.png}
+	\includegraphics[width=0.6\linewidth]{integral1.png}
 	\caption[Integral image]{\label{fig:integral1}}  \textbf{The value of the integral image at point(x,y) is the sum of all the pixels above and to the left  } \cite{integralimage}
 \end{figure}
 
 \begin{figure}
 	\centering
-	\includegraphics[width=0.8\linewidth]{integral2.png}
+	\includegraphics[width=0.6\linewidth]{integral2.png}
 	\caption[Integral image referencing]{\label{fig:integral2}}  \textbf{If we are required to computer the sum of all the pixel values in D, the only 4 points we need to know is 1,2,3,4 since the value at 1 is A, the value at 2 is A + B, the value at 3 is A + C and the value at 4 is A + B + C + D, with a bit of algebra, it is not difficult to see that D = 4 + 1 - 2 - 3. }\cite{integralimage} 
 \end{figure}
 
+\newpage
+\thispagestyle{plain}
+\mbox{}
+
+\section{AdaBoost}
+\label{sec:adaboost}
+In general, AdaBoost is an algorithm used to construct a strong classifier by combining number of weak classifiers as a weighted sum:
+\begin{equation}
+F(x) = \sum\limits_{t=1}^{T}\alpha_{t}h_{t}(x)
+\end{equation}
+Where $F(x)$ is the final strong classifier and $h_{t}(x), alpha_{t}$ are weak classifiers and their respective weights. The general Adaboost algorithm for a two class classification problem can be interpreted as follow:
+\begin{algorithm}  
+\caption{Adaboost}  
+\label{alg:Adaboost}  
+\begin{algorithmic}  
+\STATE {Given training data points, $(x_{1},t_{1})..(x_{N},t_{N})$ where $t_{n}$ is the target value of $x_{n}$, and $ t_{n} \in \{ -1,1\}$}   
+\STATE {Initialise data weight $\{w_{n}\}$ by $w_{n}^{(1)} = \frac{1}{N}$ for $n = 1...N$}
+\FOR {For $m = 1...M$ }
+\STATE{(a) Learn a classifier $y_{m}(x)$ that minimises the weighted error: }
+\STATE{$ J_{m} = \sum\limits_{n=1}^{N}w_{n}^{(m)}I(y_{m}(X) \ne t_{n})$}
+\STATE{Where I is the impulse function which is 1 when $(y_{m}(X)\ne t_{n})$ }
+\STATE{(b) Evaluate $\epsilon = \frac{\sum_{n=1}^{N}w_{n}^{(m)}I(y_{m}(X) \ne t_{n})}{\sum_{n=1}^{N}w_{n}^{(m)}}$, and set $\alpha_{m} = ln\{\frac{1-\epsilon}{\epsilon}\} $}
+\STATE{(c)Update the data weights by $w_{n}^{(m+1)}  = w_{n}^{(m)}exp\{ \alpha_{m} I(y_{m}(X) \ne t_{n}) \}$}
+\ENDFOR
+\STATE{Make predictions using the final model by: $Y_{M}(x) = sign(\sum\limits_{m=1}^{M}\alpha_{m}y_{m}(x))$}
+\end{algorithmic}  
+\end{algorithm}
 
 
+
+Adaboost is used for real time face detection proposed by Viola and Jones which is the prior step for face feature point detection (discussed in detail in section \ref{sec:FD}) 
+
+\clearpage
 \section{Random Forest Framework}
 \label{sec:RF}
 In this section, Random Forest will be mentioned in detail since it is the algorithm used for this project. Random forest is first mentioned by Breiman in 2001 \cite{RFML}. And it had been widely used and explored in many applications since then. Before we discuss how to create a forest, let's look at how to build a decision tree first.
@@ -124,14 +158,17 @@ Equation \eqref{eq:information gain} shows the relationship between entropy and 
 	\caption[Information Gain for discrete, non-parametric distributions]{\label{fig:IG}}  \textbf{Information Gain for discrete, non-parametric distributions} \cite{DFMS}
 \end{figure}
 
+
+\clearpage
 \subsection{Random Forest}
 \label{subsec:RF}
 
-\begin{definition}
-\label{def:Random forest}
-	A random forest an ensemble of randomly trained decision trees with randomized collection of features at each split \cite{DFMS}.
-\end{definition}
-In general, random forest is distributed algorithm which means that trees are trained in parallel. Trees in a random forest are learned from randomly sampled subsets of data which reduces over-fitting compared to training on the whole data set. \cite{GFRF, MVDT,RFML} The other randomness which is often used during the training stage of the random forest is a random subset of splits for optimizing the information gain at non-leaf nodes\cite{GFRF}. Compared to other methods such as boosting, random forest has the advantage of searching only in a subset and because of the reduced size of the tests set for each tree, faster training time can be obtained and the collection of the trees at testing time is proved to be more accurate in prediction.  And overfitting can be avoided by setting the maximum depth of the tree at the beginning. At testing time, unseen data is pass to all trees in the forest during which binary test at each node of every tree is performed until the leaf node is reached. After the process, the forest will gather all class distributions of the leaves and produce an average value for the estimation as described in \eqref{eq:randomforestclassification}. Where $ \probability{P}(c|\mathbf{v})$ is the average probability of data point \textbf{v} belonging to class \textbf{c} and $\mathbb{P}_{t}(c|\mathbf{v})$ is the probability of data point \textbf{v} belonging to class \textbf{c} in one tree.
+
+A random forest an ensemble of randomly trained decision trees with randomized collection of features at each split \cite{DFMS}.
+
+In general, random forest is distributed algorithm which means that trees are trained in parallel. Compared to other methods such as boosting, random forest has the advantage of searching only in a subset and because of the reduced size of the tests set for each tree, faster training time can be obtained and the collection of the trees at testing time is proved to be more accurate in prediction. Trees in a random forest are learned from randomly sampled subsets of data which reduces over-fitting compared to training on the whole data set. \cite{GFRF, MVDT,RFML} The other randomness which is often used during the training stage of the random forest is a random subset of splits for optimizing the information gain at non-leaf nodes\cite{GFRF}. And overfitting can be avoided by setting the maximum depth of the tree at the beginning. 
+
+At testing time, unseen data is pass to all trees in the forest during which binary test at each node of every tree is performed until the leaf node is reached. After the process, the forest will gather all class distributions of the leaves and produce an average value for the estimation as described in \eqref{eq:randomforestclassification}. Where $ \probability{P}(c|\mathbf{v})$ is the average probability of data point \textbf{v} belonging to class \textbf{c} and $\mathbb{P}_{t}(c|\mathbf{v})$ is the probability of data point \textbf{v} belonging to class \textbf{c} in one tree.
 \begin{equation}
 \label{eq:randomforestclassification}
 	\probability{P}(c|\mathbf{v}) = \frac{1}{T}\sum\limits_{t=1}^T \mathbb{P}_{t}(c|\mathbf{v})

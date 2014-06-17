@@ -117,6 +117,12 @@
 \usepackage{lstpatch}
 \usepackage{cite}
 
+
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+
+
 \usepackage[centerlast,small,sc]{caption}
 \setlength{\captionmargin}{20pt}
 \newcommand{\fref}[1]{Figure~\ref{#1}}
