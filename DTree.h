@@ -68,7 +68,7 @@ public:
     void generateRandomSubPatches(const vector<HPatch>& PS);
     void generateRandomThreshold(const vector<HPatch>& PS);
     void setPatchSetBeforeSplit(vector<HPatch> PS);
-    void findBestT(vector<HPatch> PS,vector<Mat> integralImage);
+    void findBestT(vector<HPatch> PS,Mat* integralImage);
     void splitPatchSet(int bin_test);
     vector<float> computeMeanVector(vector<HPatch> sPvector);
     vector<vector<float>> computeCovariance(vector<HPatch> sPvector, bool angleOrNose);
@@ -95,10 +95,11 @@ public:
     vector<int> lIndex,rIndex;
     vector<vector<sub_patch>> rectangles;
     vector<sub_patch> bestF;
+    sub_patch *bestFArray;
     vector<int> rT;
     float detConvariance;
     vector<float> meanVector;
-    vector<Node> makeTreeNoRecursion(vector<HPatch> PS,vector<Mat> dImage);
+    vector<Node> makeTreeNoRecursion(vector<HPatch> PS,Mat* dImage);
     float trace;
     vector<float> trace2d;
     float positiveP;
@@ -120,18 +121,19 @@ public:
     
     void loadPreProcessedData(const string& fname,vector<HPatch>& PS);
     
-    void growTree(vector<HPatch> PS, vector<Mat> dImage);
+    void growTree(vector<HPatch> PS, Mat* dImage);
     
-    void regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> testGt,vector<vector<float>>& estimatedMean,Mat img3D,vector<Vote>& votes);
-    void regressionEstimation2d(Mat test2D,boundingBox testBbox,vector<vector<float>> testGt,vector<vector<float>>& estimatedMean,vector<Vote>& votes);
+    void regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> testGt,vector<vector<float>>& estimatedMean,Mat img3D,vector<Vote>& votes,PatchSet testPS);
+    void regressionEstimation2d(Mat test2D,boundingBox testBbox,vector<vector<float>> testGt,vector<vector<float>>& estimatedMean,vector<Vote>& votes,PatchSet testPS);
     vector<sub_patch> f2;
     vector<sub_patch> f1;
     vector<float> subD;
     vector<int> rt;
     int max_depth;
-    
+    Node *treeTableArray;
     vector<float> mean;
     vector<Node> treeTable;
     vector<int> nodesAtEachLevel;
+    int *nodesAtEachLevelArray;
     int noNodes;
 };

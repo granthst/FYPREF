@@ -27,7 +27,7 @@ public:
     vector<vector<float>> estimatedMean;
     vector<Vote> votes;
     vector<cv::Vec<float,6> > means;
-    void growForest(vector<HPatch> wholeDataSet, vector<Mat> depthIntegral);
+    void growForest(vector<HPatch> wholeDataSet, Mat* depthIntegral);
     void writeForest();
     void loadTree();
     void regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> testGt,Mat img3D);

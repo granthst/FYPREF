@@ -50,7 +50,9 @@ struct sub_patch{
 
 class HPatch{
 public:
-    
+    HPatch(){
+        p_width = 80;
+        p_height = 80;}
     HPatch(int w, int h){
         p_width = w;
         p_height = h;
@@ -94,6 +96,7 @@ public:
     void sampleTestPatches2d(boundingBox bbox,Mat dImage);
     void storeGroundTruth(vector<float> groundT);
     vector<HPatch> pSet;
+    HPatch *pSetArray;
     vector<float> groundT;
     int size;
 };

@@ -15,18 +15,19 @@
 #include <cstdlib>
 #include <cmath>
 #include <ctime>
+#include <opencv2/objdetect/objdetect.hpp>
 #include "DForest.h"
 
-#define PATCH_SET_SIZE 40
+#define PATCH_SET_SIZE 80
 #define DATA_SET_SIZE 496
 #define NO_TEST_SUBJECTS 100
 #define n 6
 #define THESHOLD_MAX 800
-#define NUMBER_TREES 15
+#define NUMBER_TREES 10
 #define NO_MEAN 1
-#define ERROR_TH 75
-#define ERROR_TH_2D 0.01
-#define NUM_TEST 400
+#define ERROR_TH 80
+#define ERROR_TH_2D 0.015
+#define NUM_TEST 500
 #define NUM_LANDMARKS 17
 #define NUMBER_POSE 19
 using namespace cv;
@@ -103,13 +104,13 @@ boundingBox findMask(Mat mask);
 
 void eliminateOutliars(vector<vector<float>> estimated,vector<float>& newMean);
 
-void runTestImage(int i,DForest forest,vector<float> calM);
+void runTestImage(int i,DForest forest,vector<float> calM,bool& noseA,bool& poseA);
 
 vector<vector<float>> readLandMarks(string fname);
 
 vector<Point> getdots(vector<vector<float>> landmarks);
 
-void displydots(vector<Point> dots,Mat image);
+void displydots(vector<Point> dots,Mat image, bool t);
 
 void loadPoses( const string& fileName,vector<vector<int>>& mDepthList );
 
@@ -125,6 +126,21 @@ vector<vector<float>> computeMeanVector2d(vector<vector<float>> data);
 
 void removeoutliars(vector<vector<float>>& newMean,vector<vector<float>> data);
 
+void writeAccuracyvsNoTree(int trees,vector<float> noseAccuracy, vector<float> poseAccuracy);
+
+void writeAngleError(vector<float> estimated, vector<float> ground, int angle);
+
+vector<float> estimatedPitch,estimatedYaw,estimatedRoll,groundPitch,groundYaw,groundRoll;
+
+void detectAndDisplay( Mat frame, vector<Rect>& faces );
+
+/** Global variables */
+String face_cascade_name = "haarcascade_frontalface_alt.xml";
+//String eyes_cascade_name = "haarcascade_eye_tree_eyeglasses.xml";
+CascadeClassifier face_cascade;
+//CascadeClassifier eyes_cascade;
+string window_name = "Capture - Face detection";
+RNG rng(12345);
 int main(int argc, const char * argv[])
 {
     //srand(time(NULL));
@@ -231,19 +247,31 @@ int main(int argc, const char * argv[])
     
     //DTree testTree;
     //testTree.read_tree(treefile);
-    
-    /*DForest forest(NUMBER_TREES);
-    forest.loadTree();
-    string cal_filename = "/Users/Knowhow10/Downloads/kinect_head_pose_db/02/depth.cal";
-    vector<float> calM;
-    calM = loadCalFile(cal_filename);
-
-    for(int j = 4; j < NUM_TEST; j++){
-        
-        runTestImage(j, forest, calM);
-    
-    }*/
-
+//    vector<float> noseA,poseA;
+//    
+//    DForest forest(NUMBER_TREES);
+//    forest.loadTree();
+//    string cal_filename = "/Users/Knowhow10/Downloads/kinect_head_pose_db/09/depth.cal";
+//    vector<float> calM;
+//    calM = loadCalFile(cal_filename);
+//    
+//    bool nose,pose;
+//    int a = 0;
+//    int b = 0;
+//    for(int j = 4; j < NUM_TEST; j++){
+//        nose = 0;
+//        pose = 0;
+//        runTestImage(j, forest, calM,nose,pose);
+//        if(nose ==1)
+//            a++;
+//        if(pose == 1)
+//            b++;
+//    }
+//    cout << estimatedPitch.size() << endl;
+//    writeAngleError(estimatedPitch, groundPitch, 0);
+//    writeAngleError(estimatedYaw, groundYaw, 1);
+//    writeAngleError(estimatedRoll, groundRoll, 2);
+    //writeAccuracyvsNoTree(NUMBER_TREES,noseA,poseA);
 //    vector<double> error = Error(trueMean,testGt);
 //    cout << "nose error : " << error[0] << " mm " << endl;
 //    cout << "angle error : " << error[1] << " degrees " << endl;
@@ -261,8 +289,10 @@ int main(int argc, const char * argv[])
 //    bigBbox.width = 560;
 //    bigBbox.x = 0;
 //    bigBbox.y = 0;
+//    face_cascade.load(face_cascade_name);
 //    load2dTrainingset(trainSet2d,trainLandmarks,bboxs);
 //    //cout << trainLandmarks[0][0][0] << " " << trainLandmarks[0][0][1]<< endl;
+//    cout << trainSet2d.size() << endl;
 //    vector<HPatch> wholeDataSet;
 //    for( int i = 0; i < trainSet2d.size(); i++ ){
 //        cout << "#####     i = " << i << endl;
@@ -285,49 +315,196 @@ int main(int argc, const char * argv[])
 //    //imshow("Display window", trainSet2d[156] );
 //    //cout << gray_image << endl;
 //    //waitKey(0);
+//    Mat *trainSet2dArray = new Mat[trainSet2d.size()];
+//    for(int tr = 0; tr < trainSet2d.size(); tr++){
+//        trainSet2dArray[tr] = trainSet2d[tr];
+//    }
+//    trainSet2d.clear();
 //    DForest forest(NUMBER_TREES);
-//    forest.growForest(wholeDataSet, trainSet2d);
+//    forest.growForest(wholeDataSet, trainSet2dArray);
 //    forest.writeForest();
-    
+//    vector<vector<float>> accuracy1,accuracy2,accuracy3;
+//    vector<float> timeT;
+//    //for(int noft = 5; noft <= 10; noft++){
+//        DForest forest(NUMBER_TREES);
+//        forest.loadTree();
+//        
+//        
+//        Mat testImage,testImage2;
+//        int count[17];
+//        int count2[17];
+//        int count3[17];
+//        for(int c = 0; c< 17; c++){
+//            count[c] = 0;
+//            count2[c] = 0;
+//            count3[c] = 0;
+//        }
+//        
+//        int countI = 0;
+//        vector<float> times;
+//        //for(int p = 1; p <= 10; p++){
+//           // for(int p2 = 0; p2 <20 ; p2++){
+//                //string testimagepath = "/Users/Knowhow10/Desktop/projectFacedata/Tester_"+convertInt(p)+"/TrainingPose/pose_"+convertInt(p2);
+//                string testimagepath = "/Users/Knowhow10/Desktop/projectFacedata/Tester_105/TrainingPose/pose_15";
+//                testImage = imread(testimagepath+".png",CV_LOAD_IMAGE_GRAYSCALE);
+//                testImage2 = imread(testimagepath+".png",CV_LOAD_IMAGE_COLOR);
+//                Mat testSum = Mat(481,641,CV_64FC3);
+//                integral(testImage, testSum);
+//                vector<vector<float>> templms1,templms2;
+//                vector<Point> dots;
+//                templms1 = readLandMarks(testimagepath+".land");
+//                //cout << templms1.size() <<endl;
+//                pickWantedLandmarks(templms1, templms2);
+//                dots = getdots(templms1);
+//                face_cascade.load( face_cascade_name );
+//                vector<Rect> face;
+//                detectAndDisplay( testImage2,face );
+//                //if(face.size() == 1){
+//        //            cout << "face x :" << face.x- face.width<<" face y: " << face.y <<endl;
+//        //            cout << "face w :" << face.width << " face h: " << face.height <<endl;
+//                    boundingBox testBbox ;
+//        //            cout << testBbox.x << " " << testBbox.y << endl;
+//        //            cout << testBbox.width << " " << testBbox.height << endl;
+//                    countI++;
+//                    testBbox.x = face[0].x;
+//                    testBbox.y = face[0].y;
+//                    testBbox.width = face[0].width;
+//                    testBbox.height =face[0].height;
+//                    clock_t t = clock();
+//                    forest.regressionEstimation2d(testSum, testBbox, templms2);
+//                    //cout << forest.estimatedMean.size() << endl;
+//                    vector<vector<float>> mean ;//= computeMeanVector2d(forest.estimatedMean);
+//                    cout << forest.estimatedMean.size() <<endl;
+//                    removeoutliars(mean,forest.estimatedMean);
+//                    t = clock() - t;
+//                    times.push_back((float)t/CLOCKS_PER_SEC);
+//                    cout << "time " << (float)t/CLOCKS_PER_SEC << endl;
+//            //        for(int j = 0; j < forest.estimatedMean.size() ; j++){
+//            //            for(int i =0; i < 17; i= i+2){
+//            //                cout << "feature " << i << " x: " << forest.estimatedMean[j][i] << " y: " << forest.estimatedMean[j][i+1] << endl;
+//            //            }
+//            //        }
+//                    for(int j = 0; j < mean.size(); j++){
+//                        cout << "feature " << j << endl;
+//                        cout << "estimated x : " << mean[j][0] << " y : " << mean[j][1] << endl;
+//                        cout << "true x : " << templms2[j][0] << " true y: " << templms2[j][1] <<endl;
+//                        float err = sqrt((mean[j][0] - templms2[j][0])*(mean[j][0] - templms2[j][0]) + ((mean[j][1]-templms2[j][1])*(mean[j][1]-templms2[j][1])));
+//                        cout << " error " << err <<endl;
+//                        if(err <= 0.018)
+//                            count[j] ++;
+//                        if(err <= 0.015)
+//                            count2[j] ++;
+//                        if(err <= 0.013)
+//                            count3[j] ++;
+//                    }
+                    //forest.estimatedMean.clear();
+                //}
+            //}
+            
+        //}
+//        vector<float> temp1;
+//        for(int e = 0; e < 17; e++){
+//            //cout <<(float)count[e]/countI << endl;
+//            temp1.push_back((float)count[e]/countI);
+//            
+//            
+//        }
+//        accuracy1.push_back(temp1);
+//        
+//        vector<float> temp2;
+//        for(int e = 0; e < 17; e++){
+//            
+//            
+//            //cout <<(float)count[e]/countI << endl;
+//            temp2.push_back((float)count2[e]/countI);
+//            
+//            
+//            
+//        }
+//        accuracy2.push_back(temp2);
+//        
+//        vector<float> temp3;
+//        for(int e = 0; e < 17; e++){
+//            
+//            
+//            cout <<(float)count[e]/countI << endl;
+//            temp3.push_back((float)count3[e]/countI);
+//            
+//            
+//            
+//        }
+//        accuracy3.push_back(temp3);
+//        float atime = 0;
+//        for(int i =0; i < times.size(); i++){
+//            atime = atime + times[i];
+//        }
+//        cout << atime / times.size() <<endl;
+//        timeT.push_back(atime / times.size());
+//    }
+//    cout << accuracy1.size() <<endl;
+//    ofstream fOut,fOut2,fOut3;
+//    fOut.open("2daccuracy0.018.txt");
+//    fOut2.open("2daccuracy0.015.txt");
+//    fOut3.open("2daccuracy0.013.txt");
+//    for(int j =0; j < accuracy1.size(); j++){
+//        fOut << j+1 << " " << timeT[j] << " ";
+//        fOut2 << j+1 << " " << timeT[j] << " ";
+//        fOut3 << j+1 << " " << timeT[j] << " ";
+//        for(int i =0; i <17; i++){
+//            //cout << accuracy1[j][i] << " " << j+1 << " " << timeT[j] << endl;
+//            fOut << accuracy1[j][i] << " " ;
+//            fOut2 << accuracy2[j][i] << " " ;
+//            fOut3 << accuracy3[j][i] << " " ;
+//        }
+//        fOut2 << endl;
+//        fOut3 << endl;
+//        fOut << endl;
+//    }
+//    
+//    fOut.close();
+//    fOut2.close();
+//    fOut3.close();
+//    vector<Point> estimatedDots = getdots(mean);
+//    vector<Point> trueDots = getdots(templms2);
+//    //displydots(trueDots, testImage2,1);
+//    //displydots(estimatedDots, testImage2,0);
+//    
+//    imshow("Display window", testImage2 );
+//    waitKey(0);
     DForest forest(NUMBER_TREES);
     forest.loadTree();
+    VideoCapture stream1(0);   //0 is the id of video device.0 if you have only one camera.
     
-    Mat testImage;
-    string testimagepath = "/Users/Knowhow10/Desktop/projectFacedata/Tester_10/TrainingPose/pose_10";
-    testImage = imread(testimagepath+".png",CV_LOAD_IMAGE_GRAYSCALE);
-    Mat testSum = Mat(481,641,CV_64FC3);
-    integral(testImage, testSum);
-    vector<vector<float>> templms1,templms2;
-    vector<Point> dots;
-    templms1 = readLandMarks(testimagepath+".land");
-    //cout << templms1.size() <<endl;
-    pickWantedLandmarks(templms1, templms2);
-    dots = getdots(templms1);
-    boundingBox testBbox = findBbox2d(dots);
-    clock_t t = clock();
-    forest.regressionEstimation2d(testSum, testBbox, templms2);
-    //cout << forest.estimatedMean.size() << endl;
-    vector<vector<float>> mean ;//= computeMeanVector2d(forest.estimatedMean);
-    removeoutliars(mean,forest.estimatedMean);
-    t = clock() - t;
-    cout << "time " << (float)t/CLOCKS_PER_SEC << endl;
-//    for(int j = 0; j < forest.estimatedMean.size() ; j++){
-//        for(int i =0; i < 17; i= i+2){
-//            cout << "feature " << i << " x: " << forest.estimatedMean[j][i] << " y: " << forest.estimatedMean[j][i+1] << endl;
-//        }
-//    }
-//    for(int j = 0; j < mean.size(); j++){
-//        cout << "estimated x : " << mean[j][0] << " y : " << mean[j][1] << endl;
-//        cout << "true x : " << templms2[j][0] << " true y: " << templms2[j][1] <<endl;
-//        float err = sqrt((mean[j][0] - templms2[j][0])*(mean[j][0] - templms2[j][0]) + ((mean[j][1]-templms2[j][1])*(mean[j][1]-templms2[j][1])));
-//        cout << " error " << err <<endl;
-//    }
-    vector<Point> estimatedDots = getdots(mean);
-    vector<Point> trueDots = getdots(templms2);
-    displydots(estimatedDots, testImage);
-    displydots(trueDots, testImage);
-    imshow("Display window", testImage );
-    waitKey(0);
+    if (!stream1.isOpened()) { //check if video device has been initialised
+        cout << "cannot open camera";
+    }
+    
+    //unconditional loop
+    while (true) {
+        Mat cameraFrame;
+        stream1.read(cameraFrame);
+        face_cascade.load( face_cascade_name );
+        vector<Rect> face;
+        boundingBox testBbox;
+        vector<vector<float>> templms2;
+        //vector<vector<float>>
+        //cout << cameraFrame.cols << endl;
+        detectAndDisplay( cameraFrame,face );
+        testBbox.x = face[0].x;
+        testBbox.y = face[0].y;
+        testBbox.width = face[0].width;
+        testBbox.height =face[0].height;
+        Mat testSum = Mat(481,641,CV_64FC3);
+        integral(cameraFrame, testSum);
+        vector<vector<float>> mean ;
+        forest.regressionEstimation2d(testSum, testBbox, templms2);
+        removeoutliars(mean,forest.estimatedMean);
+        vector<Point> estimatedDots = getdots(mean);
+        displydots(estimatedDots, cameraFrame,0);
+        imshow("cam", cameraFrame);
+        if (waitKey(30) >= 0)
+            break;
+    }
     return 0;
 }
 
@@ -857,7 +1034,7 @@ void eliminateOutliars(vector<vector<float>> estimated,vector<float>& newMean){
 
 }
 
-void runTestImage(int i,DForest forest,vector<float> calM){
+void runTestImage(int i,DForest forest,vector<float> calM,bool& noseA,bool& poseA){
     string subS = "";
     string testImagefile = "";
     string testImageGTfile = "";
@@ -867,8 +1044,8 @@ void runTestImage(int i,DForest forest,vector<float> calM){
         subS = "0"+convertInt(i);
     else
         subS = convertInt(i);
-    testImagefile = "/Users/Knowhow10/Downloads/kinect_head_pose_db/02/frame_00"+subS+ "_depth.bin";
-    testImageGTfile = "/Users/Knowhow10/Desktop/db_annotations/02/frame_00"+subS+"_pose.bin";
+    testImagefile = "/Users/Knowhow10/Downloads/kinect_head_pose_db/09/frame_00"+subS+ "_depth.bin";
+    testImageGTfile = "/Users/Knowhow10/Desktop/db_annotations/09/frame_00"+subS+"_pose.bin";
 
     int16_t* testImage = loadDepthImageCompressed(testImagefile.c_str());
     boundingBox testBbox = getBoundingBox(testImage);
@@ -881,17 +1058,29 @@ void runTestImage(int i,DForest forest,vector<float> calM){
     integral(channels[2],sumI);
     vector<float> testGt = loadPoseBin(testImageGTfile);
     vector<float> trueMean;
+    clock_t t = clock();
     forest.regressionEstimation(sumI, testBbox, testGt, img3D);
+    
     vector<float> after;
     eliminateOutliars(forest.estimatedMean,after);
+    t = clock() -t;
+    cout << "time " << (float)t/CLOCKS_PER_SEC <<endl;
     if(after.size() > 0){
         cout << "estimated " << after[0] << " " << after[1] << " " << after[2] << " " << after[3] << " " << after[4] << " " << after[5] << endl;
         cout << "ground_T " << testGt[0] << " " << testGt[1] << " " << testGt[2] << " " << testGt[3] << " " << testGt[4] << " " << testGt[5] << endl;
+        estimatedPitch.push_back(after[3]); groundPitch.push_back(testGt[3]);
+        estimatedYaw.push_back(after[4]);   groundYaw.push_back(testGt[4]);
+        estimatedRoll.push_back(after[5]);  groundRoll.push_back(testGt[5]);
         vector<double> error = Error(after,testGt);
         cout << "nose error : " << error[0] << " mm " << endl;
         cout << "angle error : " << error[1] << " degrees " << endl;
+        if(error[0] <= 20)
+            noseA = 1;
+        if(error[1] <= 15)
+            poseA = 1;
     }
     forest.estimatedMean.clear();
+    
 }
 
 vector<vector<float>> readLandMarks(string fname){
@@ -926,11 +1115,19 @@ vector<Point> getdots(vector<vector<float>> landmarks){
     }
     return dots;
 }
-void displydots(vector<Point> dots,Mat image){
+void displydots(vector<Point> dots,Mat image, bool t){
+    int r = 0;
+    int g = 0;
+    if(t == 0)
+        g = 255;
+    else
+        r = 255;
     for(int i = 0; i < NUM_LANDMARKS; i=i+1){
-        //circle(image, dots[i],1,CV_RGB(255,0,0),3);
+        if(t == 1)
+        circle(image, dots[i],1,CV_RGB(255,0,0),8);
         string s = convertInt(i);
-        cv::putText(image,s, dots[i], CV_FONT_HERSHEY_PLAIN, 0.4,CV_RGB(255,0,0));
+        if(t == 0)
+        cv::putText(image,s, dots[i], CV_FONT_HERSHEY_PLAIN, 0.4,CV_RGB(r,g,0));
     }
 }
 
@@ -958,30 +1155,46 @@ boundingBox findBbox2d(vector<Point> dots){
 }
 
 void load2dTrainingset(vector<Mat>& trainingset2d, vector<vector<vector<float>>>& landmarks, vector<boundingBox>& bboxs){
-    Mat temp;
+    Mat temp,temp2;
     vector<vector<float>> templms1,templms2;
     vector<Point> tempdots;
     boundingBox tempbbox;
     string folderpath = "/Users/Knowhow10/Desktop/projectFacedata/Tester_";
     string pngfilename = "pose_";
     string landmarkfilename = "";
+    int count = 0;
     for(int i = 1; i <= NO_TEST_SUBJECTS; i++){
         for(int j = 0; j < NUMBER_POSE; j++){
             Mat Sumimage = Mat(481,641,CV_64FC3);
             string subs1 = convertInt(i) + "/TrainingPose/";
             temp = imread(folderpath+subs1+pngfilename+convertInt(j)+".png",CV_LOAD_IMAGE_GRAYSCALE);
-            //cout << " image read ok " << endl;
-            integral(temp,Sumimage);
-            templms1 = readLandMarks(folderpath+subs1+pngfilename+convertInt(j)+".land");
-            pickWantedLandmarks(templms1,templms2);
-            tempdots = getdots(templms1);
-            tempbbox = findBbox2d(tempdots);
-            trainingset2d.push_back(Sumimage);
-            bboxs.push_back(tempbbox);
-            landmarks.push_back(templms2);
-            templms1.clear();
-            tempdots.clear();
-            templms2.clear();
+            temp2 = imread(folderpath+subs1+pngfilename+convertInt(j)+".png",CV_LOAD_IMAGE_COLOR);
+            //cout << folderpath+subs1+pngfilename+convertInt(j)+".png" << endl;
+//            CascadeClassifier tempFace_cascade;
+//            tempFace_cascade.load(face_cascade_name);
+            vector<Rect> faces;
+            detectAndDisplay( temp2,faces );
+            if(faces.size() == 1){
+                count++;
+                //cout << faces[0].x << " " << faces[0].width <<endl;
+                tempbbox.x = faces[0].x - 0.1*faces[0].width;
+                tempbbox.y = faces[0].y - 0.1*faces[0].height;
+                tempbbox.width = faces[0].width*1.2;
+                tempbbox.height = faces[0].height*1.2;
+                //cout << tempbbox.x << " " << tempbbox.width <<endl;
+                cout << " image " << count << " read ok " << endl;
+                integral(temp,Sumimage);
+                templms1 = readLandMarks(folderpath+subs1+pngfilename+convertInt(j)+".land");
+                pickWantedLandmarks(templms1,templms2);
+                tempdots = getdots(templms1);
+                //tempbbox = findBbox2d(tempdots);
+                trainingset2d.push_back(Sumimage);
+                bboxs.push_back(tempbbox);
+                landmarks.push_back(templms2);
+                templms1.clear();
+                tempdots.clear();
+                templms2.clear();
+            }
            // cout << i << " " << j << " done " << endl;
         }
         
@@ -1054,5 +1267,56 @@ void removeoutliars(vector<vector<float>>& newMean,vector<vector<float>> data){
     }
     //cout << " new mean size " << newMean.size() <<endl;
     
+}
+
+void writeAccuracyvsNoTree(int trees,vector<float> noseAccuracy, vector<float> poseAccuracy){
+    ofstream fOut;
+    fOut.open("NotreesVSaccuracy.txt");
+    for(int i = 0; i < trees; i++){
+        fOut << noseAccuracy[i] << " " << poseAccuracy[i] << " " << i+1 <<endl;
+    }
+    fOut.close();
+}
+
+void writeAngleError(vector<float> estimated, vector<float> ground, int angle){
+    ofstream fOut;
+    string fname = "";
+    if(angle == 0)
+        fname= "pitchError.txt";
+    if(angle == 1)
+        fname= "yawError.txt";
+    if(angle == 2)
+        fname= "rollError.txt";
+    fOut.open(fname);
+    for(int i = 0; i < estimated.size(); i++){
+        fOut << estimated[i] << " " << ground[i] << " " << i << endl;
+        
+    }
+    fOut.close();
+}
+
+void detectAndDisplay( Mat frame, vector<Rect>& faces )
+{
+    //std::vector<Rect> faces;
+    Mat frame_gray;
     
+    cvtColor( frame, frame_gray, CV_BGR2GRAY );
+    equalizeHist( frame_gray, frame_gray );
+    
+    //-- Detect faces
+    face_cascade.detectMultiScale( frame_gray, faces, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, Size(30, 30) );
+    //cout << faces.size() << endl;
+    rectangle(frame, faces[0], Scalar( 255, 0, 255 ));
+    //face = faces;
+//    for( size_t i = 0; i < faces.size(); i++ )
+//    {
+//        Point center( faces[i].x + faces[i].width*0.5, faces[i].y + faces[i].height*0.5 );
+//        ellipse( frame, center, Size( faces[i].width*0.5, faces[i].height*0.5), 0, 0, 360, Scalar( 255, 0, 255 ), 4, 8, 0 );
+//        
+//        Mat faceROI = frame_gray( faces[i] );
+//
+//    }
+    
+    //-- Show what you got
+    //imshow( window_name, frame );
 }

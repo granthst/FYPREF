@@ -7,6 +7,7 @@
 //
 
 #include "HPatch.h"
+#include <ctime>
 #define SIZE_X 10
 #define SIZE_Y 10
 void HPatch::setPatchXY(boundingBox bbox){
@@ -166,9 +167,9 @@ void PatchSet::getRandomPatches(boundingBox bbox, Mat dImage, vector<float> grou
 }
 
 void PatchSet::getRandomPatches2d(boundingBox bbox, Mat dImage, vector<vector<float>> groundT2d, bool p){
-    int np = 30;
+    int np = 60;
     if( p == 1)
-        np = 10;
+        np = 20;
     for(int i = 0; i < np; i++){
         HPatch temp(80,80);
         temp.setPatchXY(bbox);
@@ -206,6 +207,12 @@ void PatchSet::sampleTestPatches(boundingBox bbox,Mat dImage){
             //cout << "x coor " << temp.pC.p.x << endl;
             pSet.push_back(temp);
         }
+    }
+    pSetArray = new HPatch[pSet.size()];
+    //cout << pSet.size() <<endl;
+    //cout << sizeof(pSetArray) <<endl;
+    for(int i = 0; i < pSet.size(); i++){
+        pSetArray[i] = pSet[i];
     }
 }
 

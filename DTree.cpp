@@ -7,30 +7,20 @@
 //
 
 #include "DTree.h"
-#define n_F 50
+#include <ctime>
+#define n_F 100
 #define n_T 10
 #define THESHOLD_MAX 200
-#define DEPTH_TREE 15
-#define TRACE_MAX 400
+#define DEPTH_TREE 20
+#define TRACE_MAX 300
 #define SAMPLE_PATCHES 1000
 #define P_TH 1
 #define T_P 0.7
 #define TD_LAMBDA 0.125
+#define step_x 5
+#define step_y 5
 
-string integralImageFilename = "integral3.txt";
-string treeFilename = "tree.txt";
-//read tree file
-bool Node::read(ifstream& fInp){
-    
-    
-    
-    return 0;
-}
 
-//write tree file
-void Node::write(ofstream& fInp){
-    
-}
 
 void Node::generateRandomSubPatches(const vector<HPatch>& PS){
     sub_patch temp;
@@ -74,7 +64,7 @@ void Node::setPatchSetBeforeSplit( vector<HPatch> PS){
     beforeSplit = PS;
 }
 
-void Node::findBestT(vector<HPatch> PS, vector<Mat> itegralImage){
+void Node::findBestT(vector<HPatch> PS, Mat* itegralImage){
     
     //cout << PS.size() << endl;
     float infoGainTemp = 0;//numeric_limits<int>::min();
@@ -163,7 +153,7 @@ void Node::findBestT(vector<HPatch> PS, vector<Mat> itegralImage){
 
 }
 
-vector<Node> Node::makeTreeNoRecursion(vector<HPatch> PS, vector<Mat> integralImage) {
+vector<Node> Node::makeTreeNoRecursion(vector<HPatch> PS, Mat* integralImage) {
     
     int iterationNo = 0;
     vector<Node> pointers;
@@ -437,11 +427,16 @@ void DTree::read_tree(const string& fname){
             tempNode.bestF = tempBestF;
             //cout << tempNode.bestF[0].x << endl;
             //cout << tempNode.bestF.size() << endl;
+            tempNode.bestFArray = new sub_patch[tempBestF.size()];
+            for(int bf =0; bf < tempBestF.size(); bf++){
+                tempNode.bestFArray[bf] = tempBestF[bf];
+            }
             tempBestF.clear();
         }
         else{
 //            for(int i = 0; i < 6; i++){
 //                fInp >> tempData;
+//                //cout << tempData <<endl;
 //                tempMean.push_back(tempData);
 //            }
 //            fInp >> tempTrace >> tempP;
@@ -474,7 +469,16 @@ void DTree::read_tree(const string& fname){
     
     fInp.close();
     noNodes = treeTable.size();
+    treeTableArray = new Node[treeTable.size()];
+    for(int i = 0; i < treeTable.size(); i++){
+        treeTableArray[i] = treeTable[i];
+    }
     
+    nodesAtEachLevelArray = new int[nodesAtEachLevel.size()];
+    for(int j = 0; j < nodesAtEachLevel.size(); j++){
+        nodesAtEachLevelArray[j] = nodesAtEachLevel[j];
+        
+    }
 }
 
 //store tree
@@ -504,14 +508,113 @@ void DTree::write_tree(const string& fname){
 
 
 //build the tree
-void DTree::growTree(vector<HPatch> PS, vector<Mat> dImage){
+void DTree::growTree(vector<HPatch> PS, Mat* dImage){
     treeTable = m_root.makeTreeNoRecursion(PS,dImage);
 }
 
 
-void DTree::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> testGt,vector<vector<float>>& estimatedMean,Mat img3D,vector<Vote>& votes){
-    PatchSet testPS(SAMPLE_PATCHES);
-    testPS.sampleTestPatches(testBbox, img3D);
+
+
+//void DTree::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> testGt,vector<vector<float>>& estimatedMean,Mat img3D,vector<Vote>& votes,PatchSet testPS){
+////    PatchSet testPS(SAMPLE_PATCHES);
+////    testPS.sampleTestPatches(testBbox, img3D);
+//    //testPS.getRandomPatches(testBbox, img3D, testGt, 1);
+//    //cout << testPS.pSet.size() << endl;
+//    vector<int> accumlativeNodesAtEachLevel;
+//    int accumlativeSum = 0;
+//    for(int i = 0;  i < nodesAtEachLevel.size(); i++) {
+//        
+//        
+//        accumlativeNodesAtEachLevel.push_back(accumlativeSum);
+//        accumlativeSum += nodesAtEachLevelArray[i];
+//        //cout << " nodesAtEachLevel " << nodesAtEachLevel[i] << endl;
+//        //cout << " accumlativeNodesAtEachLevel " << accumlativeNodesAtEachLevel[i] << endl;
+//    }
+//    
+//    for(int i = 0; i < testPS.pSet.size(); i++){
+//        int chosenNode = 0;
+//        vector<float> tempMean;
+//        //cout << endl << "considering patch " << i << "..." << endl;
+//        for(int j = 0; j < nodesAtEachLevel.size(); j++){
+//            //cout << " j " << j << endl;
+//            //bool chosen = 0;
+//            int noLeafNodes = 0;
+//            int noNonLeafNodes = 0;
+//            //cout << nodesAtEachLevel[j] << endl;
+//            for(int k = 0; k < nodesAtEachLevelArray[j]; k++){
+//                bool outputMeanVector = false;
+//                //cout << " k " << k << endl;
+//                int nodePositionInTreeTable = accumlativeNodesAtEachLevel[j] + k;
+//                if (treeTableArray[nodePositionInTreeTable].isleaf) {
+//                    noLeafNodes++;
+//                }
+//                else {
+//                    noNonLeafNodes++;
+//                }
+//                //cout << " noLeafNodes " << noLeafNodes << endl;
+//                //cout << " noNonLeafNodes " << noNonLeafNodes <<  endl;
+//                if (k == chosenNode) {
+//                    //string direction = "";
+//                    if (treeTableArray[nodePositionInTreeTable].isleaf) {
+//                        outputMeanVector = true;
+//                        chosenNode = -1;
+//                        //direction = "STOP";
+//                    }
+//                    else {
+//                        testPS.pSetArray[i].chooseSubPatches(treeTableArray[nodePositionInTreeTable].bestF,test3D);
+//                        //testPS.pSet[i].setSubPatchDistance(test3D);
+//                        if (testPS.pSetArray[i].subPDistance > treeTableArray[nodePositionInTreeTable].best_T) {
+//                            chosenNode = 2*(noNonLeafNodes-1);
+//                            //direction = "LEFT";
+//                            //chosen = 1;
+//                            k = nodesAtEachLevel[j];
+//                        }
+//                        else {
+//                            chosenNode = 2*noNonLeafNodes - 1;
+//                            //direction = "RIGHT";
+//                            //chosen = 1;
+//                            k = nodesAtEachLevel[j];
+//                        }
+//                    }
+//                    //cout << "at level: " << j << ", subPatch Distance = " << testPS.pSet[i].subPDistance << ", threshold = " << treeTable[nodePositionInTreeTable].best_T << ", chosenNode = " << chosenNode << " (" << direction << ")" << endl;
+//                    if (outputMeanVector) {
+//                        //cout << "stopped node position in tree table = " << nodePositionInTreeTable << endl;
+//                        //for(int a = 0; a < treeTable[nodePositionInTreeTable].meanVector.size(); a++)
+//                        //cout << treeTable[nodePositionInTreeTable].meanVector[a] << " ";
+//                        //cout << endl;
+//                        //cout << testPS.pSet[i].pC.p.d <<endl;
+//                        //if(treeTable[nodePositionInTreeTable].trace < 400 ){
+//                        
+//                        if(testPS.pSetArray[i].pC.p.d != 0 && treeTableArray[nodePositionInTreeTable].trace < TRACE_MAX && testPS.pSetArray[i].subPDistance != 0 && treeTableArray[nodePositionInTreeTable].positiveP >= P_TH ){
+//                            Vote v;
+//                            //cout << "trace " << treeTable[nodePositionInTreeTable].trace << endl;
+//                            tempMean = treeTableArray[nodePositionInTreeTable].meanVector;
+//                            //cout << testPS.pSet[i].pC.p.x<< endl;
+//                            tempMean[0] = tempMean[0] + testPS.pSetArray[i].pC.p.x;
+//                            tempMean[1] = tempMean[1] + testPS.pSetArray[i].pC.p.y;
+//                            tempMean[2] = tempMean[2] + testPS.pSetArray[i].pC.p.d;
+////                            v.vote[0] = tempMean[0];
+////                            v.vote[1] = tempMean[1];
+////                            v.vote[2] = tempMean[2];
+////                            v.vote[3] = tempMean[3];
+////                            v.vote[4] = tempMean[4];
+////                            v.vote[5] = tempMean[5];
+//                            //v.trace
+//                            //cout << "vote used: " << tempMean[0] << " " << tempMean[1] << " " << tempMean[2] << endl;
+//                            //votes.push_back(v);
+//                            estimatedMean.push_back(tempMean);
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+//    
+//}
+
+void DTree::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> testGt,vector<vector<float>>& estimatedMean,Mat img3D,vector<Vote>& votes,PatchSet testPS){
+    //    PatchSet testPS(SAMPLE_PATCHES);
+    //    testPS.sampleTestPatches(testBbox, img3D);
     //testPS.getRandomPatches(testBbox, img3D, testGt, 1);
     //cout << testPS.pSet.size() << endl;
     vector<int> accumlativeNodesAtEachLevel;
@@ -520,83 +623,109 @@ void DTree::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> t
         
         
         accumlativeNodesAtEachLevel.push_back(accumlativeSum);
-        accumlativeSum += nodesAtEachLevel[i];
+        accumlativeSum += nodesAtEachLevelArray[i];
         //cout << " nodesAtEachLevel " << nodesAtEachLevel[i] << endl;
         //cout << " accumlativeNodesAtEachLevel " << accumlativeNodesAtEachLevel[i] << endl;
     }
     
-    for(int i = 0; i < testPS.pSet.size(); i++){
-        int chosenNode = 0;
-        vector<float> tempMean;
-        //cout << endl << "considering patch " << i << "..." << endl;
-        for(int j = 0; j < nodesAtEachLevel.size(); j++){
-            //cout << " j " << j << endl;
-            //bool chosen = 0;
-            int noLeafNodes = 0;
-            int noNonLeafNodes = 0;
-            //cout << nodesAtEachLevel[j] << endl;
-            for(int k = 0; k < nodesAtEachLevel[j]; k++){
-                bool outputMeanVector = false;
-                //cout << " k " << k << endl;
-                int nodePositionInTreeTable = accumlativeNodesAtEachLevel[j] + k;
-                if (treeTable[nodePositionInTreeTable].isleaf) {
-                    noLeafNodes++;
-                }
-                else {
-                    noNonLeafNodes++;
-                }
-                //cout << " noLeafNodes " << noLeafNodes << endl;
-                //cout << " noNonLeafNodes " << noNonLeafNodes <<  endl;
-                if (k == chosenNode) {
-                    string direction = "";
-                    if (treeTable[nodePositionInTreeTable].isleaf) {
-                        outputMeanVector = true;
-                        chosenNode = -1;
-                        direction = "STOP";
+    for(int x = 0; x < testBbox.width-80; x = x + step_x){
+        for(int y = 0; y < testBbox.height-80; y = y + step_y){
+            int p_x = testBbox.x + x;
+            int p_y = testBbox.y + y;
+//            cout << x << " " << y << endl;
+//            cout << x << " " << y << endl;
+            int pc_x = p_x + 40;
+            int pc_y = p_y + 40;
+            float subpatchDistance = 0;
+            int chosenNode = 0;
+            vector<float> tempMean;
+            //cout << endl << "considering patch " << i << "..." << endl;
+            for(int j = 0; j < nodesAtEachLevel.size(); j++){
+                //cout << " j " << j << endl;
+                //bool chosen = 0;
+                int noLeafNodes = 0;
+                int noNonLeafNodes = 0;
+                //cout << nodesAtEachLevel[j] << endl;
+                for(int k = 0; k < nodesAtEachLevelArray[j]; k++){
+                    bool outputMeanVector = false;
+                    //cout << " k " << k << endl;
+                    int nodePositionInTreeTable = accumlativeNodesAtEachLevel[j] + k;
+                    if (treeTableArray[nodePositionInTreeTable].isleaf) {
+                        noLeafNodes++;
                     }
                     else {
-                        testPS.pSet[i].chooseSubPatches(treeTable[nodePositionInTreeTable].bestF,test3D);
-                        //testPS.pSet[i].setSubPatchDistance(test3D);
-                        if (testPS.pSet[i].subPDistance > treeTable[nodePositionInTreeTable].best_T) {
-                            chosenNode = 2*(noNonLeafNodes-1);
-                            direction = "LEFT";
-                            //chosen = 1;
-                            k = nodesAtEachLevel[j];
+                        noNonLeafNodes++;
+                    }
+                    //cout << " noLeafNodes " << noLeafNodes << endl;
+                    //cout << " noNonLeafNodes " << noNonLeafNodes <<  endl;
+                    if (k == chosenNode) {
+                        //string direction = "";
+                        if (treeTableArray[nodePositionInTreeTable].isleaf) {
+                            outputMeanVector = true;
+                            chosenNode = -1;
+                            //direction = "STOP";
                         }
                         else {
-                            chosenNode = 2*noNonLeafNodes - 1;
-                            direction = "RIGHT";
-                            //chosen = 1;
-                            k = nodesAtEachLevel[j];
+
+                            sub_patch  rectangles[2];
+//                            rectangles[0] = treeTableArray[nodePositionInTreeTable].bestF[0];
+//                            rectangles[1] = treeTableArray[nodePositionInTreeTable].bestF[1];
+                            for(int r = 0; r < 2; r++){
+                                rectangles[r].x = treeTableArray[nodePositionInTreeTable].bestF[r].y + p_y;
+                                rectangles[r].y = treeTableArray[nodePositionInTreeTable].bestF[r].x + p_x;
+                                rectangles[r].w = treeTableArray[nodePositionInTreeTable].bestF[r].h;
+                                rectangles[r].h = treeTableArray[nodePositionInTreeTable].bestF[r].w;                            }
+                            
+
+//                            cout << " 1 " << rectangles[0].x << " " << rectangles[0].y << " " << rectangles[0].w << " " << rectangles[0].h << endl;
+//                            cout << " 2 " << rectangles[1].x << " " << rectangles[1].y << " " << rectangles[1].w << " " << rectangles[1].h << endl;
+                            double sum1 = (test3D.at<double>(rectangles[0].x+rectangles[0].w,rectangles[0].y+rectangles[0].h) + test3D.at<double>(rectangles[0].x,rectangles[0].y) - test3D.at<double>(rectangles[0].x+rectangles[0].w,rectangles[0].y) - test3D.at<double>(rectangles[0].x,rectangles[0].y+rectangles[0].h))/(double)(rectangles[0].w*rectangles[0].h);
+                            //cout << sum1 << endl;
+                            double sum2 = (test3D.at<double>(rectangles[1].x+rectangles[1].w,rectangles[1].y+rectangles[1].h) + test3D.at<double>(rectangles[1].x,rectangles[1].y) - test3D.at<double>(rectangles[1].x+rectangles[1].w,rectangles[1].y) - test3D.at<double>(rectangles[1].x,rectangles[1].y+rectangles[1].h))/(double)(rectangles[1].w*rectangles[1].h);
+                            subpatchDistance = sum1 - sum2;
+                            if ( subpatchDistance > treeTableArray[nodePositionInTreeTable].best_T) {
+                                chosenNode = 2*(noNonLeafNodes-1);
+                                //direction = "LEFT";
+                                //chosen = 1;
+                                k = nodesAtEachLevel[j];
+                            }
+                            else {
+                                chosenNode = 2*noNonLeafNodes - 1;
+                                //direction = "RIGHT";
+                                //chosen = 1;
+                                k = nodesAtEachLevel[j];
+                            }
                         }
-                    }
-                    //cout << "at level: " << j << ", subPatch Distance = " << testPS.pSet[i].subPDistance << ", threshold = " << treeTable[nodePositionInTreeTable].best_T << ", chosenNode = " << chosenNode << " (" << direction << ")" << endl;
-                    if (outputMeanVector) {
-                        //cout << "stopped node position in tree table = " << nodePositionInTreeTable << endl;
-                        //for(int a = 0; a < treeTable[nodePositionInTreeTable].meanVector.size(); a++)
+                        //cout << "at level: " << j << ", subPatch Distance = " << testPS.pSet[i].subPDistance << ", threshold = " << treeTable[nodePositionInTreeTable].best_T << ", chosenNode = " << chosenNode << " (" << direction << ")" << endl;
+                        if (outputMeanVector) {
+                            //cout << "stopped node position in tree table = " << nodePositionInTreeTable << endl;
+                            //for(int a = 0; a < treeTable[nodePositionInTreeTable].meanVector.size(); a++)
                             //cout << treeTable[nodePositionInTreeTable].meanVector[a] << " ";
-                        //cout << endl;
-                        //cout << testPS.pSet[i].pC.p.d <<endl;
-                        //if(treeTable[nodePositionInTreeTable].trace < 400 ){
-                        
-                        if(testPS.pSet[i].pC.p.d != 0 && treeTable[nodePositionInTreeTable].trace < TRACE_MAX && testPS.pSet[i].subPDistance != 0 && treeTable[nodePositionInTreeTable].positiveP >= P_TH ){
-                            Vote v;
-                            //cout << "trace " << treeTable[nodePositionInTreeTable].trace << endl;
-                            tempMean = treeTable[nodePositionInTreeTable].meanVector;
-                            //cout << testPS.pSet[i].pC.p.x<< endl;
-                            tempMean[0] = tempMean[0] + testPS.pSet[i].pC.p.x;
-                            tempMean[1] = tempMean[1] + testPS.pSet[i].pC.p.y;
-                            tempMean[2] = tempMean[2] + testPS.pSet[i].pC.p.d;
-                            v.vote[0] = tempMean[0];
-                            v.vote[1] = tempMean[1];
-                            v.vote[2] = tempMean[2];
-                            v.vote[3] = tempMean[3];
-                            v.vote[4] = tempMean[4];
-                            v.vote[5] = tempMean[5];
-                            //v.trace
-                            //cout << "vote used: " << tempMean[0] << " " << tempMean[1] << " " << tempMean[2] << endl;
-                            votes.push_back(v);
-                            estimatedMean.push_back(tempMean);
+                            //cout << endl;
+                            //cout << testPS.pSet[i].pC.p.d <<endl;
+                            //if(treeTable[nodePositionInTreeTable].trace < 400 ){
+//                            cout << img3D.at<Vec3f>(pc_x,pc_y)[0] << endl;
+//                            cout << img3D.at<Vec3f>(pc_x,pc_y)[1] << endl;
+//                            cout << img3D.at<Vec3f>(pc_x,pc_y)[2] << endl;
+                            if( img3D.at<Vec3f>(pc_y,pc_x)[2] != 0 && treeTableArray[nodePositionInTreeTable].trace < TRACE_MAX && subpatchDistance != 0 && treeTableArray[nodePositionInTreeTable].positiveP >= P_TH ){
+                                //Vote v;
+                                //cout << "trace " << treeTable[nodePositionInTreeTable].trace << endl;
+                                tempMean = treeTableArray[nodePositionInTreeTable].meanVector;
+                                //cout << testPS.pSet[i].pC.p.x<< endl;
+                                tempMean[0] = tempMean[0] + img3D.at<Vec3f>(pc_y,pc_x)[0];
+                                tempMean[1] = tempMean[1] + img3D.at<Vec3f>(pc_y,pc_x)[1];
+                                tempMean[2] = tempMean[2] + img3D.at<Vec3f>(pc_y,pc_x)[2];
+                                //                            v.vote[0] = tempMean[0];
+                                //                            v.vote[1] = tempMean[1];
+                                //                            v.vote[2] = tempMean[2];
+                                //                            v.vote[3] = tempMean[3];
+                                //                            v.vote[4] = tempMean[4];
+                                //                            v.vote[5] = tempMean[5];
+                                //v.trace
+                                //cout << "vote used: " << tempMean[0] << " " << tempMean[1] << " " << tempMean[2] << endl;
+                                //votes.push_back(v);
+                                estimatedMean.push_back(tempMean);
+                            }
                         }
                     }
                 }
@@ -606,9 +735,14 @@ void DTree::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> t
     
 }
 
-void DTree::regressionEstimation2d(Mat test2d,boundingBox testBbox,vector<vector<float>> testGt,vector<vector<float>>& estimatedMean,vector<Vote>& votes){
-    PatchSet testPS(SAMPLE_PATCHES);
-    testPS.sampleTestPatches2d(testBbox, test2d);
+
+
+
+
+
+void DTree::regressionEstimation2d(Mat test2d,boundingBox testBbox,vector<vector<float>> testGt,vector<vector<float>>& estimatedMean,vector<Vote>& votes, PatchSet testPS){
+    //PatchSet testPS(SAMPLE_PATCHES);
+    //testPS.sampleTestPatches2d(testBbox, test2d);
     //testPS.getRandomPatches(testBbox, img3D, testGt, 1);
     //cout << testPS.pSet.size() << endl;
     vector<int> accumlativeNodesAtEachLevel;
@@ -617,10 +751,11 @@ void DTree::regressionEstimation2d(Mat test2d,boundingBox testBbox,vector<vector
         
         
         accumlativeNodesAtEachLevel.push_back(accumlativeSum);
-        accumlativeSum += nodesAtEachLevel[i];
+        accumlativeSum += nodesAtEachLevelArray[i];
         //cout << " nodesAtEachLevel " << nodesAtEachLevel[i] << endl;
         //cout << " accumlativeNodesAtEachLevel " << accumlativeNodesAtEachLevel[i] << endl;
     }
+    
     
     for(int i = 0; i < testPS.pSet.size(); i++){
         int chosenNode = 0;
@@ -632,11 +767,11 @@ void DTree::regressionEstimation2d(Mat test2d,boundingBox testBbox,vector<vector
             int noLeafNodes = 0;
             int noNonLeafNodes = 0;
             //cout << nodesAtEachLevel[j] << endl;
-            for(int k = 0; k < nodesAtEachLevel[j]; k++){
+            for(int k = 0; k < nodesAtEachLevelArray[j]; k++){
                 bool outputMeanVector = false;
                 //cout << " k " << k << endl;
                 int nodePositionInTreeTable = accumlativeNodesAtEachLevel[j] + k;
-                if (treeTable[nodePositionInTreeTable].isleaf) {
+                if (treeTableArray[nodePositionInTreeTable].isleaf) {
                     noLeafNodes++;
                 }
                 else {
@@ -645,26 +780,30 @@ void DTree::regressionEstimation2d(Mat test2d,boundingBox testBbox,vector<vector
                 //cout << " noLeafNodes " << noLeafNodes << endl;
                 //cout << " noNonLeafNodes " << noNonLeafNodes <<  endl;
                 if (k == chosenNode) {
-                    string direction = "";
-                    if (treeTable[nodePositionInTreeTable].isleaf) {
+                    //string direction = "";
+                    if (treeTableArray[nodePositionInTreeTable].isleaf) {
                         outputMeanVector = true;
                         chosenNode = -1;
-                        direction = "STOP";
+                        //direction = "STOP";
                     }
                     else {
-                        testPS.pSet[i].chooseSubPatches(treeTable[nodePositionInTreeTable].bestF,test2d);
+                        //clock_t t = clock();
+                        testPS.pSet[i].chooseSubPatches(treeTableArray[nodePositionInTreeTable].bestF,test2d);
+                        //testPS.pSet[i].chooseSubPatches(treeTable[nodePositionInTreeTable].bestF,test2d);
+                        //t = clock() - t;
+                        //cout << "time " << (float)t/CLOCKS_PER_SEC << endl;
                         //testPS.pSet[i].setSubPatchDistance(test3D);
-                        if (testPS.pSet[i].subPDistance > treeTable[nodePositionInTreeTable].best_T) {
+                        if (testPS.pSet[i].subPDistance > treeTableArray[nodePositionInTreeTable].best_T) {
                             chosenNode = 2*(noNonLeafNodes-1);
-                            direction = "LEFT";
+                            //direction = "LEFT";
                             //chosen = 1;
-                            k = nodesAtEachLevel[j];
+                            k = nodesAtEachLevelArray[j];
                         }
                         else {
                             chosenNode = 2*noNonLeafNodes - 1;
-                            direction = "RIGHT";
+                            //direction = "RIGHT";
                             //chosen = 1;
-                            k = nodesAtEachLevel[j];
+                            k = nodesAtEachLevelArray[j];
                         }
                     }
                     //cout << "at level: " << j << ", subPatch Distance = " << testPS.pSet[i].subPDistance << ", threshold = " << treeTable[nodePositionInTreeTable].best_T << ", chosenNode = " << chosenNode << " (" << direction << ")" << endl;
@@ -676,10 +815,10 @@ void DTree::regressionEstimation2d(Mat test2d,boundingBox testBbox,vector<vector
                         //cout << testPS.pSet[i].pC.p.d <<endl;
                         //if(treeTable[nodePositionInTreeTable].trace < 400 ){
                         
-                        if(treeTable[nodePositionInTreeTable].positiveP >= P_TH ){
+                        if(treeTableArray[nodePositionInTreeTable].positiveP >= P_TH ){
                             //Vote v;
                             //cout << "trace " << treeTable[nodePositionInTreeTable].trace << endl;
-                            tempMean = treeTable[nodePositionInTreeTable].meanVector;
+                            tempMean = treeTableArray[nodePositionInTreeTable].meanVector;
                             //cout << testPS.pSet[i].pC.p.x<< endl;
                             for(int lm = 0; lm < tempMean.size(); lm = lm +2){
 //                                cout << tempMean[lm] << endl;
@@ -702,3 +841,4 @@ void DTree::regressionEstimation2d(Mat test2d,boundingBox testBbox,vector<vector
     }
     
 }
+

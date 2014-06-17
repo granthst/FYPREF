@@ -7,7 +7,8 @@
 //
 
 #include "DForest.h"
-#define SIZE 1000
+#include <ctime>
+#define SIZE 800
 
 string convertIntToString(int number)
 {
@@ -16,7 +17,7 @@ string convertIntToString(int number)
     return ss.str();//return a string with the contents of the stream
 }
 
-void DForest::growForest(vector<HPatch> wholeDataSet, vector<Mat> depthIntegral){
+void DForest::growForest(vector<HPatch> wholeDataSet, Mat* depthIntegral){
     for(int i = 0; i < noTrees; i++){
         cout << "growing tree" << i << endl;
         DTree tree(10);
@@ -29,7 +30,7 @@ void DForest::growForest(vector<HPatch> wholeDataSet, vector<Mat> depthIntegral)
 void DForest::writeForest(){
     string treeFilename = "";
     for(int i = 0; i < noTrees; i++){
-        treeFilename = "2dTreesnew"+ convertIntToString(i) + ".txt";
+        treeFilename = "2dtreebiggest"+ convertIntToString(i) + ".txt";
         trees[i].write_tree(treeFilename);
     }
 }
@@ -39,7 +40,7 @@ void DForest::loadTree(){
     string treeFilename = "";
     for(int i = 0; i < noTrees; i++){
         DTree tree(10);
-        treeFilename = "2dTreesnew"+ convertIntToString(i) + ".txt";
+        treeFilename = "2dtreesnew"+ convertIntToString(i) + ".txt";
         tree.read_tree(treeFilename);
         trees.push_back(tree);
         cout << "tree" << i << " load" << endl;
@@ -47,9 +48,13 @@ void DForest::loadTree(){
 }
 
 void DForest::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float> testGt,Mat img3D){
-    
+    PatchSet testPS(1000);
+    testPS.sampleTestPatches(testBbox, img3D);
+    //cout << sizeof(testPS.pSetArray) <<endl;
+    //cout << testPS.pSet.size() <<endl;
     for(int i = 0; i < noTrees; i++){
-        trees[i].regressionEstimation(test3D, testBbox, testGt, estimatedMean, img3D,votes);
+        //cout << "doing tree " << i <<endl;
+        trees[i].regressionEstimation(test3D, testBbox, testGt, estimatedMean, img3D,votes,testPS);
         //cout << "size mean after tree" << i+1 << " " << estimatedMean.size() << endl;
     }
     //cout << "votes : " << votes.size() << endl;
@@ -57,9 +62,16 @@ void DForest::regressionEstimation(Mat test3D,boundingBox testBbox,vector<float>
 }
 
 void DForest::regressionEstimation2d(Mat test2D,boundingBox testBbox,vector<vector<float>> testGt){
-    
+    //clock_t t = clock();
+    PatchSet testPS(1000);
+    testPS.sampleTestPatches2d(testBbox, test2D);
+    //t = clock() - t;
+    //cout << "time " << (float)t/CLOCKS_PER_SEC << endl;
     for(int i = 0; i < noTrees; i++){
-        trees[i].regressionEstimation2d(test2D, testBbox, testGt, estimatedMean,votes);
+        //clock_t t = clock();
+        trees[i].regressionEstimation2d(test2D, testBbox, testGt, estimatedMean,votes,testPS);
+       // t = clock() - t;
+       // cout << "time " << (float)t/CLOCKS_PER_SEC << endl;
         //cout << "size mean after tree" << i+1 << " " << estimatedMean.size() << endl;
     }
     //cout << "votes : " << votes.size() << endl;
